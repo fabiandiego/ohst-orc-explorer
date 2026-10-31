@@ -62,7 +62,8 @@ def build_fluid(name):
     pmax = min(pmax, 0.985 * pc)
 
     sat = {k: [] for k in ("T", "p", "hl", "hv", "sl", "sv", "vl")}
-    t = T_MIN
+    # Start at T_MIN or the equation of state's lower limit, whichever is higher.
+    t = max(T_MIN, round(CP.PropsSI("Tmin", cp_name) - K + 0.5, 1))
     while t < tc - 0.3:
         T = t + K
         sat["T"].append(_r(t, 3))
@@ -111,7 +112,7 @@ def build_fluid(name):
 
 def build_htf():
     """Heat transfer fluids on a 0.5 K grid from 0 to 260 degC."""
-    defs = {"water": ("Water", 10.0), "air": ("Air", 1.0), "vp1": ("INCOMP::TVP1", 1.0)}
+    defs = {"water": ("Water", 10.0), "air": ("Air", 1.0), "vp1": ("INCOMP::TVP1", 10.0)}  # liquid-only model; c_p is pressure-independent
     out = {}
     for key, (cp_name, p_bar) in defs.items():
         rows = {"T": [], "cp": []}

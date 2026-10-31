@@ -1,6 +1,6 @@
 const fs=require('fs'); const html=fs.readFileSync('dist/ohst-explorer.html','utf8');
 const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
-const defaults={fluid:'R227ea',ths:'140',dtpp:'10',etaT:'0.9',htf:'water',f5fluid:'R245fa',f10a:'R245fa',f10b:'R227ea',dLt:'R227ea',pevpN:'28',thsN:'140',dPht:'19.2',dSplit:'0'};
+const defaults={fluid:'R227ea',pchk:'ends',ths:'140',dtpp:'10',etaT:'0.9',htf:'water',pchk:'ends',f5fluid:'R245fa',f10a:'R245fa',f10b:'R227ea',dLt:'R227ea',pevpN:'28',thsN:'140',dPht:'19.2',dSplit:'0'};
 const els={}; const calls={plots:0};
 function mkEl(id){ const e={id,_v:defaults[id],innerHTML:'',textContent:'',className:'',dataset:{},style:{},
  get value(){return this._v}, set value(v){this._v=String(v)},

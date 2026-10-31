@@ -214,6 +214,7 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
       <div class="ctl"><label for="dtpp">Pinch Δt<sub>pp</sub> <span class="num" id="dtppO"></span></label><input id="dtpp" type="range" min="2" max="20" step="0.5" value="10"></div>
       <div class="ctl"><label for="etaT">Turbine η<sub>is,t</sub> <span class="num" id="etaTO"></span></label><input id="etaT" type="range" min="0.6" max="1" step="0.01" value="0.9"></div>
       <div class="ctl"><label for="htf">Heat transfer fluid</label><select id="htf"><option value="water">Thermal water</option><option value="air">Hot air</option><option value="vp1">Therminol VP-1</option></select></div>
+      <div class="ctl"><label for="pchk">Pinch check</label><select id="pchk"><option value="ends">Paper: two points (Eqs. 5–6)</option><option value="all">Strict: whole exchanger</option></select></div>
       <div class="ctl"><span class="lab">&nbsp;</span><button id="reset">Reset to paper case</button></div>
     </div>
     <div class="readouts">
@@ -315,7 +316,7 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
   </div>
   <div class="grid">
     <div class="frame span-12">
-      <div class="ph"><span class="fig">Fig. 7</span><h3>The OHST depends on the HTF</h3><span class="scope">fixed: R1234yf · 0.7 p<sub>c</sub> · Δt<sub>pp</sub> 10 K</span></div>
+      <div class="ph"><span class="fig">Fig. 7</span><h3>The OHST depends on the HTF</h3><span class="scope">fixed: R1234yf · 0.7 p<sub>c</sub> · Δt<sub>pp</sub> 10 K · live pinch check</span></div>
       <div class="body"><div id="fig7" class="plot" role="img"></div><p class="cap" id="fig7cap"></p></div>
     </div>
   </div>
@@ -390,14 +391,14 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
 <!-- ======================= §6 ======================= -->
 <section class="band" id="s6">
   <div class="sechead"><span class="secno">§6</span><h2>Conclusions, checked</h2></div>
-  <p class="secintro">Each claim from the paper's conclusion, and whether this reproduction supports it. The table recomputes every number the paper reports at the paper's own conditions, independent of the operating point above.</p>
+  <p class="secintro">Each claim from the paper's conclusion, and whether this reproduction supports it. The table recomputes every number the paper reports at the paper's own conditions, twice: once with the paper's two-point pinch check and once with a strict check along the whole exchanger.</p>
   <div class="grid">
     <div class="frame span-6">
       <div class="ph"><span class="fig">§6</span><h3>The paper's claims</h3></div>
       <div class="body"><ul class="checks" id="claims"></ul></div>
     </div>
     <div class="frame span-6">
-      <div class="ph"><span class="fig">Repro</span><h3>Paper against this reproduction</h3><span class="scope">fixed: paper conditions</span><span class="busy" id="reproBusy"></span></div>
+      <div class="ph"><span class="fig">Repro</span><h3>Paper against this reproduction</h3><span class="scope">fixed: paper conditions · both checks</span><span class="busy" id="reproBusy"></span></div>
       <div class="body"><div class="tblwrap"><table id="repro"></table></div></div>
     </div>
   </div>
@@ -421,10 +422,11 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
 const O = window.ORC;
 const $ = id => document.getElementById(id);
 const fluids = Object.keys(O.FLUIDS);
-const PAPER = { fluid: 'R227ea', p: 28, ths: 140, dtpp: 10, etaT: 0.9, htf: 'water' };
+const PAPER = { fluid: 'R227ea', p: 28, ths: 140, dtpp: 10, etaT: 0.9, htf: 'water', pinchCheck: 'ends' };
 const S = Object.assign({}, PAPER);
-const opts = () => ({ dtpp: S.dtpp, etaT: S.etaT, htf: S.htf });
-const POPTS = { dtpp: 10, etaT: 0.9, htf: 'water' };
+const opts = () => ({ dtpp: S.dtpp, etaT: S.etaT, htf: S.htf, pinchCheck: S.pinchCheck });
+const POPTS = { dtpp: 10, etaT: 0.9, htf: 'water', pinchCheck: 'ends' };
+const SOPTS = Object.assign({}, POPTS, { pinchCheck: 'all' });
 const f1 = (x, d = 1) => (x == null || !isFinite(x)) ? '–' : x.toFixed(d);
 const pct = (x, d = 2) => (x == null || !isFinite(x)) ? '–' : (100 * x).toFixed(d) + ' %';
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -478,7 +480,7 @@ function setPRange() {
 }
 function writeCtl() {
   $('fluid').value = S.fluid; $('pevp').value = S.p; $('pevpN').value = S.p.toFixed(2); $('ths').value = S.ths; $('thsN').value = S.ths;
-  $('dtpp').value = S.dtpp; $('etaT').value = S.etaT; $('htf').value = S.htf;
+  $('dtpp').value = S.dtpp; $('etaT').value = S.etaT; $('htf').value = S.htf; $('pchk').value = S.pinchCheck;
   $('dtppO').textContent = f1(S.dtpp, 1) + ' K'; $('etaTO').textContent = S.etaT.toFixed(2);
   const f = O.FLUIDS[S.fluid];
   const feas = O.pRange(S.fluid, S.ths, opts())[1];
@@ -487,13 +489,13 @@ function writeCtl() {
   $('thsH').textContent = w ? `needs > ${f1(w.tevp + S.dtpp)} °C (t_evp + Δt_pp)` : '';
   $('papertag').hidden = !isPaper();
 }
-const isPaper = () => S.fluid === PAPER.fluid && Math.abs(S.p - PAPER.p) < 0.03 && S.ths === PAPER.ths && S.dtpp === PAPER.dtpp && S.etaT === PAPER.etaT && S.htf === PAPER.htf;
+const isPaper = () => S.fluid === PAPER.fluid && Math.abs(S.p - PAPER.p) < 0.03 && S.ths === PAPER.ths && S.dtpp === PAPER.dtpp && S.etaT === PAPER.etaT && S.htf === PAPER.htf && S.pinchCheck === PAPER.pinchCheck;
 setPRange(); writeCtl();
 let raf = 0; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(updateAll); };
 let slowT = 0, slowKey = '';
 const scheduleSlow = () => { document.querySelectorAll('.slow').forEach(e => e.classList.add('stale')); clearTimeout(slowT); slowT = setTimeout(updateSlow, 350); };
 function onInput(src) {
-  S.fluid = $('fluid').value; S.htf = $('htf').value; S.dtpp = +$('dtpp').value; S.etaT = +$('etaT').value;
+  S.fluid = $('fluid').value; S.htf = $('htf').value; S.pinchCheck = $('pchk').value; S.dtpp = +$('dtpp').value; S.etaT = +$('etaT').value;
   S.p = +(src === 'pevpN' ? $('pevpN').value : $('pevp').value) || S.p;
   S.ths = +(src === 'thsN' ? $('thsN').value : $('ths').value) || S.ths;
   S.ths = Math.min(220, Math.max(80, S.ths));
@@ -501,8 +503,8 @@ function onInput(src) {
   writeCtl(); schedule();
   if (src !== 'fluid' && src !== 'pevp' && src !== 'pevpN') scheduleSlow();
 }
-['fluid', 'htf', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener(id === 'fluid' || id === 'htf' ? 'change' : 'input', () => onInput(id)));
-['fluid', 'htf', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener('change', () => announce()));
+['fluid', 'htf', 'pchk', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener(['fluid', 'htf', 'pchk'].includes(id) ? 'change' : 'input', () => onInput(id)));
+['fluid', 'htf', 'pchk', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener('change', () => announce()));
 $('reset').addEventListener('click', () => { Object.assign(S, PAPER); setPRange(); writeCtl(); schedule(); scheduleSlow(); announce(); });
 $('optoggle').addEventListener('click', e => { const o = $('opbar').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', o); measureBar(); });
 function measureBar() { document.documentElement.style.setProperty('--barH', $('opbar').offsetHeight + 'px'); }
@@ -544,7 +546,7 @@ function drawFig4(sol) {
   if (!sol.feasible) { empty('fig4', sol.reason || 'Infeasible'); $('fig4cap').textContent = ''; return; }
   draw('fig4', tqTraces(sol, S.fluid).concat([pinchMarker(sol)]), { xaxis: { title: 'Heat flow [% of source heat down to t<sub>0</sub>]', range: [0, 100] }, yaxis: { title: 'Temperature [°C]', range: [0, Math.max(S.ths, sol.ths) + 15] }, shapes: [vline(sol.TQ.Q8, css('--ink-3'), 'dot')] },
     `T–Q diagram: heat source from ${f1(sol.ths)} to ${f1(sol.T8)} °C, pinch ${PL[sol.pinchAt]} at ${f1(sol.pinchT)} °C.`);
-  $('fig4cap').innerHTML = `Pinch found ${PL[sol.pinchAt]} at <b class="num">${f1(sol.pinchT)} °C</b>. Δt is ${f1(sol.dtCold)} K at the preheater inlet and ${f1(sol.dtEvIn)} K at the evaporator inlet. The water leaves at ${f1(sol.T8)} °C (dotted line).`;
+  $('fig4cap').innerHTML = `Pinch found ${PL[sol.pinchAt]} at <b class="num">${f1(sol.pinchT)} °C</b>. Δt is ${f1(sol.dtCold)} K at the preheater inlet and ${f1(sol.dtEvIn)} K at the evaporator inlet. The water leaves at ${f1(sol.T8)} °C (dotted line).` + hidden(sol);
 }
 let sweepOn = false, sweepT = 0, sweepIdx = 0;
 function sweepFrame(t) { const s = O.solveSimple(S.fluid, S.p, t, opts()); drawFig4(s); drawHero(s); $('sweepNote').textContent = `t_hs = ${f1(t)} °C`; }
@@ -705,7 +707,7 @@ const EQ3 = [
   ['2', '\\eta_{th}=\\dfrac{P_{net}}{\\dot Q_{HE}}=\\dfrac{\\dot m_{wf}\\,[(h_4-h_5)-(h_2-h_1)]}{\\dot Q_{HE}}', 'Thermal efficiency of the cycle alone.', s => `${f1(s.mwf, 3)} kg/s × [${f1(s.w.wt)} − ${f1(s.w.wp, 2)}] kJ/kg / ${f1(s.Qhe)} kW = ${pct(s.etaTh)}`, ''],
   ['3', '\\eta_{HE}=\\dfrac{\\dot Q_{HE}}{\\dot m_{hs}(h_6-h_0)}', 'Heat-exchanger efficiency: the share of the source heat, cooled all the way to ambient, that reaches the ORC.', s => `${f1(s.Qhe)} kW / (2 × ${f1(s.h6 - O.hsH(S.htf, 7))} kJ/kg) = ${pct(s.etaHE)}`, '<b>Hidden assumption:</b> heat left in the water below t<sub>8</sub> counts as lost, even if a district-heating network could use it.'],
   ['4', '\\eta_{sys}=\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}\\cdot\\dfrac{(h_4-h_5)-(h_2-h_1)}{h_6-h_0}', 'Eqs. 1–3 combined. The mass-flow ratio carries the pinch constraint; the second factor carries the cycle.', s => `${f1(s.r, 4)} × ${f1(s.w.wnet, 2)} / ${f1(s.h6 - O.hsH(S.htf, 7), 1)} = ${pct(s.etaSys)}`, ''],
-  ['5', '\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}=\\dfrac{\\bar c_{p,hs}(t_6-t_{evp}-\\Delta t_{pp})}{h_{evp}}', 'Fluid I: the pinch is at the evaporator inlet, so the evaporator balance alone fixes the mass flow.', s => `${s.pinchAt === 'evap-inlet' ? 'Applies here' : 'Does not apply here'}: pinch ${PL[s.pinchAt]}. Solver ratio ${f1(s.r, 4)}.`, ''],
+  ['5', '\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}=\\dfrac{\\bar c_{p,hs}(t_6-t_{evp}-\\Delta t_{pp})}{h_{evp}}', 'Fluid I: the pinch is at the evaporator inlet, so the evaporator balance alone fixes the mass flow.', s => `${s.pinchAt === 'evap-inlet' ? 'Applies here' : 'Does not apply here'}: pinch ${PL[s.pinchAt]}. Solver ratio ${f1(s.r, 4)}. Smallest ΔT anywhere: ${f1(s.minDTtrue)} K.`, '<b>Hidden assumption:</b> the pinch is checked only at the evaporator inlet and the preheater inlet. Switch "Pinch check" to strict to enforce it everywhere.'],
   ['6', '\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}=\\dfrac{\\bar c_{p,hs}(t_6-t_{2}-\\Delta t_{pp})}{h_{evp}+\\bar c_{p,wf}(t_{evp}-t_2)}', 'Fluid II: the pinch is at the preheater inlet, so the whole exchanger balance fixes the mass flow.', s => `${s.pinchAt === 'pre-inlet' ? 'Applies here' : s.pinchAt === 'pre-interior' ? 'Applies approximately' : 'Does not apply here'}: pinch ${PL[s.pinchAt]}.`, ''],
   ['7', '\\dfrac{(h_4-h_5)-(h_2-h_1)}{h_6-h_0}=\\dfrac{\\eta_{is,t}(h_4-h_{5,is})-(h_{2,is}-h_1)/\\eta_{is,p}}{h_6-h_0}', 'Component efficiencies enter only through the specific work.', s => `w_t = ${f1(s.w.wt, 2)} kJ/kg, w_p = ${f1(s.w.wp, 2)} kJ/kg`, '<b>Hidden assumption:</b> the turbine inlet is saturated vapour; superheat is neglected.'],
   ['8', 'e=h-h_0-T_0(s-s_0)', 'Specific flow exergy relative to the dead state at 7 °C.', s => `e₆ = ${f1(s.ex.in / 2, 2)} kJ/kg`, ''],
@@ -738,6 +740,7 @@ function tqTraces(sol, wfName) {
   return [line(sol.TQ.hs, 'Heat source', hs, { hovertemplate: 'Heat source<br>%{x:.1f} %, %{y:.1f} °C<extra></extra>' }),
     line(sol.TQ.wf, wfName, wf, { line: { color: wf, width: 2.4 }, hovertemplate: wfName + '<br>%{x:.1f} %, %{y:.1f} °C<extra></extra>' })];
 }
+const hidden = sol => (sol.feasible && sol.minDTtrue < S.dtpp - 0.1) ? ` Inside the preheater the temperature difference falls to <b class="num">${f1(sol.minDTtrue)} K</b> at ${f1(sol.minDTat)} °C, below Δt<sub>pp</sub>: the paper's two-point check does not see it.` : '';
 function pinchMarker(sol) {
   const q = sol.pinchQ, T = sol.pinchT;
   return { x: [q, q], y: [T, T + S.dtpp], mode: 'lines+markers', type: 'scatter', name: 'Pinch Δt<sub>pp</sub>', line: { color: css('--op'), width: 2.5 }, marker: { size: 7, color: css('--op') }, hovertemplate: 'Pinch ' + S.dtpp + ' K<extra></extra>' };
@@ -746,7 +749,7 @@ function drawTQ3() {
   if (!SOL.feasible) { empty('tq3', SOL.reason || 'Infeasible'); $('tq3cap').textContent = ''; return; }
   draw('tq3', tqTraces(SOL, S.fluid).concat([pinchMarker(SOL)]), { xaxis: { title: 'Heat flow [% of source heat down to t<sub>0</sub>]', range: [0, 100] }, yaxis: { title: 'Temperature [°C]' }, shapes: [vline(SOL.TQ.Q8, css('--ink-3'), 'dot')] },
     `T–Q diagram. Water leaves at ${f1(SOL.T8)} °C; ${f1(SOL.TQ.Q8)} % of source heat unused.`);
-  $('tq3cap').innerHTML = `Water leaves at <b class="num">${f1(SOL.T8)} °C</b>. Everything left of the dotted line, ${f1(SOL.TQ.Q8)} % of the source heat, is discarded. Pinch ${PL[SOL.pinchAt]} (${PEQ[SOL.pinchAt]}).`;
+  $('tq3cap').innerHTML = `Water leaves at <b class="num">${f1(SOL.T8)} °C</b>. Everything left of the dotted line, ${f1(SOL.TQ.Q8)} % of the source heat, is discarded. Pinch ${PL[SOL.pinchAt]} (${PEQ[SOL.pinchAt]}).` + hidden(SOL);
 }
 function drawEx() {
   if (!SOL.feasible) { empty('exBar', 'No exergy balance at this operating point'); return; }
@@ -801,7 +804,7 @@ function drawFig6() {
 function drawFig7() {
   const p = 0.7 * O.FLUIDS.R1234yf.pc, tr = [], shapes = [], cols = HTFCOL(), oh = {};
   for (const k of ['water', 'air', 'vp1']) {
-    const o = Object.assign({}, POPTS, { htf: k }); const xs = [], ys = [];
+    const o = Object.assign({}, POPTS, { htf: k, pinchCheck: S.pinchCheck }); const xs = [], ys = [];
     for (let t = 110; t <= 170; t += 1) { const s = O.solveSimple('R1234yf', p, t, o); if (s.feasible) { xs.push(t); ys.push(100 * s.etaSys); } }
     tr.push({ x: xs, y: ys, type: 'scatter', mode: 'lines', name: O.HTF[k].label, line: { color: cols[k], width: 2, dash: k === 'air' ? 'dash' : k === 'vp1' ? 'dot' : 'solid' }, hovertemplate: '%{x} °C: %{y:.2f} %<extra></extra>' });
     oh[k] = O.ohstFromSim('R1234yf', p, o); shapes.push(vline(oh[k], cols[k], 'dot'));
@@ -814,7 +817,7 @@ function drawFig7() {
 
 let OHC = null;
 function ohstCurves() {
-  const key = S.dtpp + '|' + S.etaT; if (OHC && OHC.key === key) return OHC;
+  const key = S.dtpp + '|' + S.etaT + '|' + S.pinchCheck; if (OHC && OHC.key === key) return OHC;
   const curves = {};
   for (const n of fluids) {
     const f = O.FLUIDS[n], pts = [];
@@ -870,7 +873,7 @@ function drawFig9() {
   draw('fig9a', [{ x: [lo, hi], y: [lo, hi], mode: 'lines', type: 'scatter', name: 'y = x', line: { color: css('--ink-3'), width: 1, dash: 'dot' }, hoverinfo: 'skip' }, mk(oth, css('--ctx'), 'Other fluids', 8, 'a'), mk(sel, css('--op'), S.fluid, 11, 'a')],
     { xaxis: { title: 'OHST from simulation [°C]' }, yaxis: { title: 'OHST from Eq. 15 [°C]' } }, `Predicted against simulated OHST, ${rows.length} points.`);
   draw('fig9b', [mk(oth, css('--ctx'), 'Other fluids', 8, 'd'), mk(sel, css('--op'), S.fluid, 11, 'd')], { xaxis: { title: 'OHST from simulation [°C]' }, yaxis: { title: 'Relative deviation of Eq. 15 [%]' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 0, y1: 0, line: { color: css('--ink-3'), width: 1 } }] }, `Mean absolute deviation ${mean.toFixed(2)} %.`);
-  $('fig9cap').innerHTML = `Mean absolute relative deviation <b class="num">${mean.toFixed(2)} %</b> over ${rows.length} points; the paper reports 0.81 %. Eq. 15 sits below the simulated value, increasingly so near the critical point, where this model's liquid c<sub>p</sub> varies most along the preheater.`;
+  $('fig9cap').innerHTML = `Mean absolute relative deviation <b class="num">${mean.toFixed(2)} %</b> over ${rows.length} points; the paper reports 0.81 %. ${S.pinchCheck === 'ends' ? 'With the paper\'s two-point pinch check the agreement matches the paper.' : 'The strict check moves the simulated OHST, because the real pinch can sit inside the preheater, which Eq. 15 does not model.'}`;
 }
 
 // ---------- §5 ----------
@@ -958,43 +961,71 @@ function updDual(opt) {
   $('dsT2').textContent = `2: ${f1(s.T2)}°C`; $('dsT7').textContent = `7: ${f1(s.T7)}°C`; $('dsT5').textContent = `5: ${f1(s.L.T8)}°C`; $('dsSplit').textContent = `split LT ${f1(100 * s.x, 0)} % / HT ${f1(100 * s.y, 0)} %`;
   draw('fig14a', [line(s.TQ.ht.hs, 'Water, HT path', css('--hs')), line(s.TQ.ht.wf, 'R245fa', css('--wf'))], { xaxis: { title: 'Heat flow, HT loop [kW]' }, yaxis: { title: 'Temperature [°C]', range: [0, S.ths + 10] } }, `HT loop T–Q: water ${f1(S.ths)} to ${f1(s.T7)} °C.`);
   draw('fig14b', [line(s.TQ.lt.hs, 'Water, LT branch', css('--hs')), line(s.TQ.lt.wf, lt, css('--c7'))], { xaxis: { title: 'Heat flow, LT branch [kW]' }, yaxis: { title: 'Temperature [°C]', range: [0, S.ths + 10] }, shapes: [vline(s.TQ.lt.Q0, css('--ink-3'), 'dot')] }, `LT loop T–Q with ${lt}; water leaves at ${f1(s.L.T8)} °C.`);
-  $('fig14cap').innerHTML = `Left: the full stream evaporates R245fa (flat segment). Then ${f1(100 * s.y, 1)} % of the water preheats it and leaves at <b class="num">${f1(s.T7)} °C</b>. The HT preheater's hot end is pinned at Δt<sub>pp</sub> because t<sub>2</sub> = t<sub>evp,HT</sub> + Δt<sub>pp</sub>, and the liquid c<sub>p</sub> rises toward saturation, so the profiles cannot run parallel and that branch leaves warm. Right: the LT loop on the remaining ${f1(100 * s.x, 1)} %. ${g < 0.01 ? '<b>With this property model the dual cycle does not reproduce the paper\'s gain; see §6.</b>' : ''}`;
+  $('fig14cap').innerHTML = `Left: the full stream evaporates R245fa (flat segment). Then ${f1(100 * s.y, 1)} % of the water preheats it and leaves at <b class="num">${f1(s.T7)} °C</b>. The HT preheater's hot end is pinned at Δt<sub>pp</sub> because t<sub>2</sub> = t<sub>evp,HT</sub> + Δt<sub>pp</sub>. Right: the LT loop on the remaining ${f1(100 * s.x, 1)} %. ${g < 0.01 ? (S.pinchCheck === 'all' ? '<b>With the strict pinch check the dual cycle does not beat the simple cycle; see §6.</b>' : '<b>No gain at this operating point; see §6.</b>') : ''}`;
 }
 ['dLt', 'dPht', 'dSplit'].forEach(id => $(id).addEventListener('input', () => updDual(false)));
 $('dOpt').addEventListener('click', () => updDual(true));
 
-// ---------- §6: computed at the paper's own conditions ----------
-const R = {};
-let REPRO_F7 = null;
+// ---------- §6: computed at the paper's own conditions, with both pinch checks ----------
+const R = { ends: {}, all: {} };
 async function computeRepro() {
-  $('reproBusy').textContent = 'computing…';
-  R.f7 = REPRO_F7; renderRepro(); await new Promise(r => setTimeout(r, 0));
-  R.f11 = optAll(140, POPTS); renderRepro(); await new Promise(r => setTimeout(r, 0));
-  R.d227 = O.optimizeDual('R245fa', 'R227ea', 140, POPTS).sol; R.dyf = O.optimizeDual('R245fa', 'R1234yf', 140, POPTS).sol; renderRepro();
-  const rows = await computeFig9(POPTS); R.fig9 = rows.reduce((s, r) => s + Math.abs(r.d), 0) / rows.length;
-  $('reproBusy').textContent = ''; renderRepro();
+  $('reproBusy').textContent = 'computing…'; renderRepro();
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  const pyf = 0.7 * O.FLUIDS.R1234yf.pc;
+  for (const [k, o] of [['ends', POPTS], ['all', SOPTS]]) {
+    const r = R[k];
+    r.s227 = O.solveSimple('R227ea', 28, 140, o);
+    r.ohW = O.ohstFromSim('R1234yf', pyf, o); r.ohV = O.ohstFromSim('R1234yf', pyf, Object.assign({}, o, { htf: 'vp1' }));
+    renderRepro(); await tick();
+    r.f11 = optAll(140, o); renderRepro(); await tick();
+    r.d227 = O.optimizeDual('R245fa', 'R227ea', 140, o).sol; r.dyf = O.optimizeDual('R245fa', 'R1234yf', 140, o).sol;
+    const simple = r.f11.find(x => x.n === 'R227ea');
+    r.gain = r.d227.feasible && simple ? r.d227.etaSys / simple.eta - 1 : NaN;
+    renderRepro(); await tick();
+    const rows = await computeFig9(o); r.fig9 = rows.reduce((a, x) => a + Math.abs(x.d), 0) / rows.length; renderRepro();
+  }
+  $('reproBusy').textContent = '';
 }
 function renderRepro() {
-  const r11 = R.f11 ? Object.fromEntries(R.f11.map(r => [r.n, r])) : {};
-  const s227 = O.solveSimple('R227ea', 28, 140, POPTS);
-  const w = '…';
-  const ok = x => x && x.feasible;
-  const rows = [
-    ['t<sub>evp</sub> of R245fa at 19.2 bar', '119.7 °C', f1(O.Tsat('R245fa', 19.2), 1) + ' °C'],
-    ['OHST of R227ea at 28 bar (Eq. 15)', '129.7 °C', f1(O.ohst('R227ea', 28, POPTS), 1) + ' °C'],
-    ['OHST of R1234yf at 0.7 p<sub>c</sub> (Eq. 15)', '141.6 °C', R.f7 ? f1(R.f7.eq, 1) + ' °C' : w],
-    ['OHST of R1234yf, simulated, water', '141.2 °C', R.f7 ? f1(R.f7.oh.water, 1) + ' °C' : w],
-    ['OHST of R1234yf, simulated, VP-1', '137.3 °C', R.f7 ? f1(R.f7.oh.vp1, 1) + ' °C' : w],
-    ['Mean |deviation|, Eq. 15 against simulation', '0.81 %', R.fig9 != null ? R.fig9.toFixed(2) + ' %' : w],
-    ['η<sub>sys</sub> of R227ea at 28 bar', '10.38 %', pct(s227.etaSys)],
-    ['η<sub>ex,HE</sub> of R227ea at 28 bar', '82.65 %', pct(s227.etaExHE)],
-    ['η<sub>sys</sub> of R1234yf, optimised', '9.8 %', r11.R1234yf ? pct(r11.R1234yf.eta) : w],
-    ['Best fluid in Fig. 11', 'R227ea', R.f11 ? R.f11.filter(r => isFinite(r.eta)).reduce((m, r) => r.eta > m.eta ? r : m).n : w],
-    ['η<sub>sys</sub>, dual R245fa + R227ea', '11.07 %', ok(R.d227) ? pct(R.d227.etaSys) : w],
-    ['η<sub>ex,HE</sub>, dual R245fa + R227ea', '86.44 %', ok(R.d227) ? pct(R.d227.etaExHE) : w],
-    ['η<sub>sys</sub>, dual R245fa + R1234yf', '10.53 %', ok(R.dyf) ? pct(R.dyf.etaSys) : w],
+  const w = '…', ok = x => x && x.feasible;
+  const best = f => f ? f.filter(r => isFinite(r.eta)).reduce((m, r) => r.eta > m.eta ? r : m).n : w;
+  const yf = f => { const r = f && f.find(x => x.n === 'R1234yf'); return r ? pct(r.eta) : w; };
+  const col = r => [
+    f1(O.Tsat('R245fa', 19.2), 1) + ' °C',
+    f1(O.ohst('R227ea', 28, POPTS), 1) + ' °C',
+    f1(O.ohst('R1234yf', 0.7 * O.FLUIDS.R1234yf.pc, POPTS), 1) + ' °C',
+    r.ohW != null ? f1(r.ohW, 1) + ' °C' : w,
+    r.ohV != null ? f1(r.ohV, 1) + ' °C' : w,
+    r.fig9 != null ? r.fig9.toFixed(2) + ' %' : w,
+    ok(r.s227) ? pct(r.s227.etaSys) : w,
+    ok(r.s227) ? pct(r.s227.etaExHE) : w,
+    ok(r.s227) ? f1(r.s227.minDTtrue) + ' K' : w,
+    yf(r.f11), best(r.f11),
+    ok(r.d227) ? pct(r.d227.etaSys) : w,
+    ok(r.d227) ? pct(r.d227.etaExHE) : w,
+    isFinite(r.gain) ? (r.gain >= 0 ? '+' : '') + f1(100 * r.gain, 2) + ' %' : w,
+    ok(r.dyf) ? pct(r.dyf.etaSys) : w,
   ];
-  $('repro').innerHTML = '<caption>Thermal water at 140 °C, Δt<sub>pp</sub> 10 K, η<sub>is,t</sub> 0.9</caption><thead><tr><th scope="col">Quantity</th><th scope="col">Paper</th><th scope="col">This page</th></tr></thead><tbody>' + rows.map(r => `<tr><td class="txt">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('') + '</tbody>';
+  const labels = [
+    ['t<sub>evp</sub> of R245fa at 19.2 bar', '119.7 °C'],
+    ['OHST of R227ea at 28 bar (Eq. 15)', '129.7 °C'],
+    ['OHST of R1234yf at 0.7 p<sub>c</sub> (Eq. 15)', '141.6 °C'],
+    ['OHST of R1234yf, simulated, water', '141.2 °C'],
+    ['OHST of R1234yf, simulated, VP-1', '137.3 °C'],
+    ['Mean |deviation|, Eq. 15 against simulation', '0.81 %'],
+    ['η<sub>sys</sub> of R227ea at 28 bar', '10.38 %'],
+    ['η<sub>ex,HE</sub> of R227ea at 28 bar', '82.65 %'],
+    ['Smallest ΔT in the exchanger, R227ea', '10 K (assumed)'],
+    ['η<sub>sys</sub> of R1234yf, optimised', '9.8 %'],
+    ['Best fluid in Fig. 11', 'R227ea'],
+    ['η<sub>sys</sub>, dual R245fa + R227ea', '11.07 %'],
+    ['η<sub>ex,HE</sub>, dual R245fa + R227ea', '86.44 %'],
+    ['Dual gain over simple R227ea', '+6.65 %'],
+    ['η<sub>sys</sub>, dual R245fa + R1234yf', '10.53 %'],
+  ];
+  const a = col(R.ends), b = col(R.all);
+  $('repro').innerHTML = '<caption>Thermal water at 140 °C, Δt<sub>pp</sub> 10 K, η<sub>is,t</sub> 0.9</caption><thead><tr><th scope="col">Quantity</th><th scope="col">Paper</th><th scope="col">Paper\'s check</th><th scope="col">Strict check</th></tr></thead><tbody>' +
+    labels.map((l, i) => `<tr><td class="txt">${l[0]}</td><td>${l[1]}</td><td>${a[i]}</td><td>${b[i]}</td></tr>`).join('') + '</tbody>';
 }
 const ICON = {
   ok: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
@@ -1003,21 +1034,22 @@ const ICON = {
 };
 const VERD = { ok: 'Supported', part: 'Partly supported', no: 'Not reproduced' };
 const CLAIMS = [
-  ['ok', 'The OHST depends only on evaporation pressure for a given pinch (Eq. 15), if the HTF has near-constant c<sub>p</sub>.', 'Holds by construction. Fig. 7 confirms that the oil, whose c<sub>p</sub> varies, shifts the OHST.'],
-  ['part', 'Predicted and simulated OHSTs differ only slightly (0.81 %).', 'This model finds larger gaps near the critical point, where liquid c<sub>p</sub> is far from constant along the preheater. Recheck with reference-quality properties.'],
-  ['ok', 'Comparing t<sub>hs</sub> with the OHST locates the pinch without simulation (Eq. 20–22).', 'Agrees with the full pinch search except within a few kelvin of the OHST. Try the sweep at the top of the page.'],
-  ['ok', 'Screening fluids by |OHST − t<sub>hs</sub>| finds the best candidates; R227ea is best at 140 °C.', 'This model ranks R227ea first and R1234yf second, as the paper does.'],
-  ['no', 'A dual-fluid ORC with R245fa and R227ea raises η<sub>sys</sub> to 11.07 % (+6.65 %).', 'Not reproduced. The HT preheater cannot run parallel, so its water branch leaves warm. Either the paper\'s split differs from Fig. 13, or the gain depends on near-critical property detail.'],
+  ['ok', 'The OHST depends only on evaporation pressure for a given pinch (Eq. 15), if the HTF has near-constant c<sub>p</sub>.', 'Reproduced. With CoolProp properties Eq. 15 gives 129.8 °C for R227ea at 28 bar (paper 129.7 °C), and Fig. 7 confirms that the oil, whose c<sub>p</sub> varies, shifts the OHST down.'],
+  ['ok', 'Predicted and simulated OHSTs differ only slightly (0.81 %).', 'Reproduced with the paper\'s two-point pinch check (about 0.9 %). With a strict check the gap grows to about 3 %, because the real pinch can sit inside the preheater, which Eq. 15 does not model.'],
+  ['ok', 'Comparing t<sub>hs</sub> with the OHST locates the pinch without simulation (Eq. 20–22).', 'Agrees with the pinch search under the paper\'s check. Under the strict check the pinch often sits inside the preheater instead of at its inlet. Try the sweep at the top of the page.'],
+  ['ok', 'Screening fluids by |OHST − t<sub>hs</sub>| finds the best candidates; R227ea is best at 140 °C.', 'Reproduced under both checks: R227ea first, R1234yf second.'],
+  ['part', 'A dual-fluid ORC with R245fa and R227ea raises η<sub>sys</sub> to 11.07 % (+6.65 %).', 'Reproduced only with the paper\'s two-point check (about 11.2 %). Enforcing the 10 K pinch along the whole exchanger removes the gain: the dual cycle then falls below the simple R227ea cycle.'],
   ['part', 'The OHST should be verified experimentally with several HTFs.', 'Still open; neither the paper nor this page has experimental data.'],
 ];
 $('claims').innerHTML = CLAIMS.map(c => `<li class="${c[0]}">${ICON[c[0]]}<span><span class="sr">${VERD[c[0]]}: </span><b>${c[1]}</b><br>${c[2]}</span></li>`).join('');
 const ISSUES = [
-  ['Thirteen fluids, twelve in the table', 'The text says thirteen candidates, but Table 2 lists twelve. Fig. 11 includes R152a, which has no Table 2 row. It is added here with literature constants and marked with an asterisk.'],
+  ['The pinch is checked at only two points', 'Eqs. 5–6 enforce Δt<sub>pp</sub> at the evaporator inlet and the preheater inlet only. Because the liquid c<sub>p</sub> rises toward saturation, the heat-source and working-fluid profiles bend toward each other inside the preheater. For R227ea at 28 bar the real minimum is about 7.9 K, not 10 K. The paper\'s efficiencies, and its dual-fluid gain, depend on this.'],
+  ['Thirteen fluids, twelve in the table', 'The text says thirteen candidates, but Table 2 lists twelve. Fig. 11 includes R152a, which has no Table 2 row. It is added here and marked with an asterisk.'],
   ['Eq. 19 is not a standard deviation', 'It is the pointwise relative deviation of c<sub>p</sub>(T) from its mean, which is why Fig. 6 changes sign.'],
   ['Units in the nomenclature', 'c<sub>p</sub> is listed as kg/kg K; it should be kJ/(kg·K).'],
   ['82.6 % or 82.65 %', 'The conclusion rounds the §5.1 value. The relative gains (11.07/10.38 gives +6.65 %, 86.44/82.65 gives +4.59 %) are internally consistent.'],
   ['The assumptions behind Eq. 15', 'Constant HTF c<sub>p</sub>, preheater inlet at t<sub>cond</sub>, and one mean liquid c<sub>p</sub>. With strongly varying c<sub>p</sub> a fully parallel preheater profile is impossible, so the OHST is an idealisation.'],
-  ['Wet turbine exhaust', 'Superheat at the turbine inlet is neglected. For R134a, R152a and R1234yf near their maximum pressure, expansion from saturated vapour ends slightly inside the dome. The paper does not discuss this.'],
+  ['Wet turbine exhaust', 'Superheat at the turbine inlet is neglected. For R134a, R152a, R1234ze(E) and R1234yf near their maximum pressure, expansion from saturated vapour ends slightly inside the dome. The paper does not discuss this.'],
   ['Efficiency without cost', 'Pushing the pinch to the preheater side maximises η<sub>sys</sub> but also the required heat-exchanger area. Neither area nor cost is assessed.'],
   ['Pressurised water above 180 °C', 'At 10 bar, water boils at about 180 °C. Higher OHST values imply raising the source pressure, which the paper mentions only in passing.'],
 ];
@@ -1040,14 +1072,14 @@ function updateAll() {
   if (F9) drawFig9();
 }
 function updateSlow() {
-  const key = [S.ths, S.dtpp, S.etaT, S.htf].join('|');
+  const key = [S.ths, S.dtpp, S.etaT, S.htf, S.pinchCheck].join('|');
   drawFig10(); drawFig12();
-  if (key !== slowKey) { slowKey = key; drawFig11(); updDual(true); } else updDual(false);
+  if (key !== slowKey) { slowKey = key; drawFig7(); drawFig11(); updDual(true); } else updDual(false);
   document.querySelectorAll('.slow').forEach(e => e.classList.remove('stale'));
 }
-function redrawTheme() { updateAll(); drawFig5(); drawFig6(); REPRO_F7 = drawFig7(); slowKey = ''; updateSlow(); }
+function redrawTheme() { updateAll(); drawFig5(); drawFig6(); drawFig7(); slowKey = ''; updateSlow(); }
 updateAll(); drawFig5(); drawFig6(); renderRepro();
-setTimeout(() => { REPRO_F7 = drawFig7(); updateSlow(); setTimeout(computeRepro, 50); }, 60);
+setTimeout(() => { drawFig7(); updateSlow(); setTimeout(computeRepro, 50); }, 60);
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawTheme);
 new MutationObserver(redrawTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 })();

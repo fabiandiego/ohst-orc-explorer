@@ -128,7 +128,7 @@
   const HTF = {
     water: { label: 'Thermal water (10 bar)', T: [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260], cp: [4.217, 4.182, 4.179, 4.185, 4.197, 4.216, 4.245, 4.285, 4.339, 4.408, 4.497, 4.61, 4.77, 4.98] },
     air: { label: 'Hot air (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.004, 1.006, 1.009, 1.015, 1.023, 1.033, 1.044] },
-    vp1: { label: 'Therminol VP-1 (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.52, 1.68, 1.84, 1.99, 2.14, 2.28, 2.42] },
+    vp1: { label: 'Therminol VP-1', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.52, 1.68, 1.84, 1.99, 2.14, 2.28, 2.42] },
   };
   for (const k in HTF) buildHTF(k);
   function buildHTF(k) { // build fine h, s tables 0..260 C at 0.1 K
@@ -155,7 +155,7 @@
   const hsT = (k, h) => interp(HTF[k].hh, HTF[k].tt, h);
 
   // ---------- Simple ORC ----------
-  const DEF = { Tcond: 20, T0: 7, dtpp: 10, etaT: 0.9, etaP: 0.8, mhs: 2, htf: 'water', N: 60 };
+  const DEF = { Tcond: 20, T0: 7, dtpp: 10, etaT: 0.9, etaP: 0.8, mhs: 2, htf: 'water', N: 60, pinchCheck: 'all' };
 
   // working-fluid side, independent of heat source
   const wfCache = new Map();
@@ -222,10 +222,12 @@
     const h6 = hsH(k, ths), h2 = w.st[2].h, h4 = w.st[4].h;
     // wf points ordered from cold end (state 2) to hot end (state 4)
     const pts = w.pre.map(p => [p[0], p[1]]); pts.push([w.tevp, h4]);
-    const minDT = r => { let m = 1e9, idx = 0; for (let i = 0; i < pts.length; i++) { const Tw = hsT(k, h6 - r * (h4 - pts[i][1])); const d = Tw - pts[i][0]; if (d < m) { m = d; idx = i; } } return [m, idx]; };
+    const chk = o.pinchCheck === 'ends' ? [0, pts.length - 2] : null; // 'ends': paper's Eqs. 5-6, only preheater inlet and evaporator inlet
+    const minDT = r => { let m = 1e9, idx = 0; for (let i = 0; i < pts.length; i++) { if (chk && !chk.includes(i)) continue; const Tw = hsT(k, h6 - r * (h4 - pts[i][1])); const d = Tw - pts[i][0]; if (d < m) { m = d; idx = i; } } return [m, idx]; };
     let lo = 0, hi = (h6 - hsH(k, w.st[2].T)) / (h4 - h2);
     for (let i = 0; i < 60; i++) { const m = 0.5 * (lo + hi); if (minDT(m)[0] > o.dtpp) lo = m; else hi = m; }
     const r = lo;
+    const trueMin = (() => { let m = 1e9, at = 0; for (const q of pts) { const d = hsT(k, h6 - r * (h4 - q[1])) - q[0]; if (d < m) { m = d; at = q[0]; } } return { dt: m, at }; })();
     const dtCold = hsT(k, h6 - r * (h4 - h2)) - w.st[2].T, dtEvIn = hsT(k, h6 - r * (h4 - w.st[3].h)) - w.tevp;
     const [, pIdx] = minDT(r);
     const nPre = pts.length - 2; // index of state 3 (evaporator inlet)
@@ -251,7 +253,7 @@
     TQwf.splice(TQwf.length - 1, 0, [100 * (q8 + r * (w.st[3].h - h2)) / Qmax, w.tevp]);
     const TQhs = []; for (let i = 0; i <= 40; i++) { const T = T0 + (ths - T0) * i / 40; TQhs.push([100 * (hsH(k, T) - h0) / Qmax, T]); }
     return {
-      feasible: true, w, ths, r, mwf: r * o.mhs, pinchAt, pinchT: pinchPt[0], pinchQ: 100 * ((h8 - h0) + r * (pinchPt[1] - h2)) / (h6 - h0), dtCold, dtEvIn, T7, T8, h6, h7, h8,
+      feasible: true, w, ths, r, mwf: r * o.mhs, pinchAt, minDTtrue: trueMin.dt, minDTat: trueMin.at, pinchT: pinchPt[0], pinchQ: 100 * ((h8 - h0) + r * (pinchPt[1] - h2)) / (h6 - h0), dtCold, dtEvIn, T7, T8, h6, h7, h8,
       etaTh, etaHE, etaSys, etaExHE, P: r * o.mhs * w.wnet, Qhe: Qhe * o.mhs,
       ex: { in: e6 * o.mhs, wf: exIn * o.mhs, loss: e8 * o.mhs, destr: (e6 - e8 - exIn) * o.mhs },
       TQ: { wf: TQwf, hs: TQhs, Q8: 100 * (h8 - h0) / Qmax, Q7: 100 * (h7 - h0) / Qmax },
@@ -309,7 +311,8 @@
     const QpreHT = mHT * (wH.st[3].h - wH.st[2].h);
     const preOK = y => { // check pinch in HT preheater with water y*mhs from T2 downward
       const m = y * o.mhs; let mn = 1e9;
-      for (const p of wH.pre) { const Tw = hsT(k, h2 - mHT * (wH.st[3].h - p[1]) / m); mn = Math.min(mn, Tw - p[0]); }
+      const pp = o.pinchCheck === 'ends' ? [wH.pre[0], wH.pre[wH.pre.length - 1]] : wH.pre;
+      for (const p of pp) { const Tw = hsT(k, h2 - mHT * (wH.st[3].h - p[1]) / m); mn = Math.min(mn, Tw - p[0]); }
       return mn;
     };
     let lo = 1e-4, hi = 1; // find minimal y with pinch >= dtpp
@@ -355,11 +358,12 @@
     const f = mk(ht);
     const TevpHT = target - o.dtpp;
     const pHT0 = psat(f, TevpHT + TK) / 1e5;
-    // Step 2: refine pHT by maximising efficiency around that point
-    const fn = p => { const s = solveDual(ht, lt, p, pLT, ths, o); return s.feasible ? s.etaSys : -1; };
-    const [ha, hb] = pRange(ht, ths, o);
-    const g = golden(fn, Math.max(ha, pHT0 * 0.7), Math.min(hb, pHT0 * 1.3), 1e-3);
-    return { pHT0, pHT: g.x, pLT, ohstLT: target, sol: solveDual(ht, lt, g.x, pLT, ths, o) };
+    // Step 2 (paper, Section 5.2): keep pHT fixed and optimise the water split to the HT preheater.
+    const base = solveDual(ht, lt, pHT0, pLT, ths, o);
+    if (!base.feasible) return { pHT0, pHT: pHT0, pLT, ohstLT: target, split: null, sol: base };
+    const fy = y => { const s = solveDual(ht, lt, pHT0, pLT, ths, Object.assign({}, o, { split: y })); return s.feasible ? s.etaSys : -1; };
+    const g = golden(fy, base.yMin, 0.999, 1e-4);
+    return { pHT0, pHT: pHT0, pLT, ohstLT: target, split: g.x, sol: solveDual(ht, lt, pHT0, pLT, ths, Object.assign({}, o, { split: g.x })) };
   }
 
   // saturation dome for T-s plots
