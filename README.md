@@ -4,6 +4,8 @@ Interactive reproduction of Sections 2–6 of:
 
 > W. Liu, D. Meinel, C. Wieland, H. Spliethoff et al., *Optimal Heat Source Temperature for thermodynamic optimization of sub-critical Organic Rankine Cycles*, **Energy 88 (2015) 897–906**. doi:10.1016/j.energy.2015.07.040
 
+**Live page:** https://fabiandiego.github.io/ohst-orc-explorer/
+
 A single page with interactive charts, animations, schematics and equations with live values. Every number is computed in the browser from the paper's equations and the boundary conditions in Table 1.
 
 ## Contents
@@ -30,6 +32,7 @@ A single page with interactive charts, animations, schematics and equations with
 | `check.js` | Prints engine results next to the paper's values |
 | `uitest.js` | Runs the page logic against a stubbed DOM in Node |
 | `dist/ohst-explorer.html` | Compiled, self-contained page |
+| `docs/index.html` | Same page as a full HTML document, served by GitHub Pages |
 
 ## Usage
 
