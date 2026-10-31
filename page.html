@@ -198,7 +198,7 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
     <div><span class="k">Source</span><span class="v">Liu, Meinel, Gleinser, Wieland, Spliethoff. <i>Energy</i> 88 (2015) 897–906</span></div>
     <div class="last"><span class="k">DOI</span><span class="v num">10.1016/j.energy.2015.07.040</span></div>
     <div><span class="k">Boundary conditions (Table 1)</span><span class="v">ṁ<sub>hs</sub> 2 kg/s · t<sub>cond</sub> 20 °C · t<sub>0</sub> 7 °C · η<sub>is,p</sub> 0.8</span></div>
-    <div class="last"><span class="k">Property model</span><span class="v">Peng–Robinson EOS, prototype. The paper used REFPROP 9.0, so values can differ by a few percent, most near the critical point. §6 lists every deviation.</span></div>
+    <div class="last"><span class="k">Property model</span><span class="v"><span id="modelName"></span>. The paper used REFPROP 9.0. <span id="modelNote"></span> §6 lists every deviation.</span></div>
     <div class="wide bottom"><details><summary>Nomenclature</summary><div class="nomen" id="nomen"></div></details></div>
     <div class="last bottom"><span class="k">Sections</span><span class="v"><a href="#hero">Pinch</a> · <a href="#s2">§2</a> · <a href="#s3">§3</a> · <a href="#s4">§4</a> · <a href="#s5">§5</a> · <a href="#s6">§6</a></span></div>
   </div>
@@ -409,7 +409,7 @@ footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(
   </div>
 </section>
 </main>
-<footer class="wrap">Reproduction of W. Liu et al., <i>Energy</i> 88 (2015) 897–906. Property model: Peng–Robinson with ideal-gas c<sub>p</sub> anchored to Table 2 (prototype). Charts: plotly.js; equations: KaTeX.</footer>
+<footer class="wrap">Reproduction of W. Liu et al., <i>Energy</i> 88 (2015) 897–906. Property model: <span id="modelFoot"></span>. Charts: plotly.js; equations: KaTeX.</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-basic-dist-min@2.35.2/plotly-basic.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -463,6 +463,9 @@ const vline = (x, color, dash, y0 = 0, y1 = 1) => ({ type: 'line', xref: 'x', yr
 const NOMEN = [['c<sub>p</sub>', 'specific heat capacity, kJ/(kg·K)'], ['e', 'specific exergy, kJ/kg'], ['h', 'specific enthalpy, kJ/kg'], ['ṁ', 'mass flow rate, kg/s'], ['p', 'pressure, bar'], ['P', 'power, kW'], ['Q̇', 'heat flow, kW'], ['s', 'specific entropy, kJ/(kg·K)'], ['t', 'temperature, °C'], ['T', 'temperature, K'],
   ['η<sub>sys</sub>', 'global system efficiency'], ['η<sub>th</sub>', 'thermal efficiency of the cycle'], ['η<sub>HE</sub>', 'heat-exchanger efficiency'], ['η<sub>ex,HE</sub>', 'exergetic efficiency of the heat exchanger'], ['η<sub>is,t</sub>, η<sub>is,p</sub>', 'isentropic turbine / pump efficiency'],
   ['Δt<sub>pp</sub>', 'pinch-point temperature difference'], ['OHST', 'Optimal Heat Source Temperature'], ['OEP', 'Optimal Evaporation Pressure'], ['HTF', 'heat transfer fluid'], ['p<sub>c</sub>, t<sub>c</sub>', 'critical pressure / temperature'], ['hs, wf', 'heat source, working fluid'], ['evp, cond, pre', 'evaporation, condensation, preheater'], ['0', 'ambient (dead) state, 7 °C'], ['1–8', 'state points, Fig. 1a']];
+const TABLED = O.MODEL.startsWith('CoolProp');
+$('modelName').textContent = O.MODEL; $('modelFoot').textContent = O.MODEL;
+$('modelNote').textContent = TABLED ? 'Both are reference-quality equations of state, so remaining differences come mostly from the paper\'s method, not the properties.' : 'This prototype model can differ by a few percent, most near the critical point.';
 $('nomen').innerHTML = NOMEN.map(n => `<div><b>${n[0]}</b><span>${n[1]}</span></div>`).join('');
 
 // ---------- controls ----------
@@ -991,7 +994,7 @@ function renderRepro() {
     ['η<sub>ex,HE</sub>, dual R245fa + R227ea', '86.44 %', ok(R.d227) ? pct(R.d227.etaExHE) : w],
     ['η<sub>sys</sub>, dual R245fa + R1234yf', '10.53 %', ok(R.dyf) ? pct(R.dyf.etaSys) : w],
   ];
-  $('repro').innerHTML = '<caption>Thermal water at 140 °C, Δt<sub>pp</sub> 10 K, η<sub>is,t</sub> 0.9</caption><thead><tr><th scope="col">Quantity</th><th scope="col">Paper</th><th scope="col">Prototype</th></tr></thead><tbody>' + rows.map(r => `<tr><td class="txt">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('') + '</tbody>';
+  $('repro').innerHTML = '<caption>Thermal water at 140 °C, Δt<sub>pp</sub> 10 K, η<sub>is,t</sub> 0.9</caption><thead><tr><th scope="col">Quantity</th><th scope="col">Paper</th><th scope="col">This page</th></tr></thead><tbody>' + rows.map(r => `<tr><td class="txt">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('') + '</tbody>';
 }
 const ICON = {
   ok: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg>',

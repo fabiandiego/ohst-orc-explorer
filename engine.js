@@ -56,6 +56,7 @@
   function hig(f, T) { const n = CP0_EXP, c = f.cp20 / Math.pow(293.15, n); return c * (Math.pow(T, n + 1) - Math.pow(f.Tref, n + 1)) / (n + 1); }
   function sig(f, T, P) { const n = CP0_EXP, c = f.cp20 / Math.pow(293.15, n); return c * (Math.pow(T, n) - Math.pow(f.Tref, n)) / n - f.R * Math.log(P / 1e5); }
   function props(f, T, P, phase) { // phase 'l' or 'v'
+    if (f.tab) return phase === 'l' ? tab.liq(f, T, P / 1e5) : tab.vap(f, T); // vapour table exists only on the condenser isobar
     const { A, B, zl, zv } = Zroots(f, T, P);
     const Z = phase === 'l' ? zl : zv;
     const a = aT(f, T), da = daT(f, T);
@@ -67,6 +68,7 @@
   }
   const satCache = new Map();
   function psat(f, T) { // Pa
+    if (f.tab) return tab.psat(f, T);
     const key = f.name + T.toFixed(4);
     if (satCache.has(key)) return satCache.get(key);
     let P = f.Pc * Math.exp(5.373 * (1 + f.w) * (1 - f.Tc / T));
@@ -80,14 +82,47 @@
     satCache.set(key, P); return P;
   }
   function Tsat(f, Pbar) { // degC
+    if (f.tab) return tab.Tsat(f, Pbar);
     const P = Pbar * 1e5;
     if (P >= f.Pc) return NaN;
     let lo = 150, hi = f.Tc - 1e-4;
     for (let i = 0; i < 60; i++) { const m = 0.5 * (lo + hi); if (psat(f, m) > P) hi = m; else lo = m; }
     return 0.5 * (lo + hi) - TK;
   }
-  function satL(f, T) { return props(f, T, psat(f, T), 'l'); }
-  function satV(f, T) { return props(f, T, psat(f, T), 'v'); }
+  function satL(f, T) { return f.tab ? tab.sat(f, T, 'l') : props(f, T, psat(f, T), 'l'); }
+  function satV(f, T) { return f.tab ? tab.sat(f, T, 'v') : props(f, T, psat(f, T), 'v'); }
+
+  // ---------- Tabulated backend (CoolProp tables from data/gen_props.py) ----------
+  // When tables are loaded, these replace psat/Tsat/satL/satV/props for that fluid.
+  const tab = {
+    psat(f, T) { const s = f.tab.sat; return interp(s.T, s.p, T - TK) * 1e5; },
+    Tsat(f, Pbar) { const s = f.tab.sat; return Pbar * 1e5 >= f.Pc ? NaN : interp(s.p, s.T, Pbar); },
+    sat(f, T, ph) { const s = f.tab.sat, t = T - TK; return ph === 'l' ? { h: interp(s.T, s.hl, t), s: interp(s.T, s.sl, t), v: interp(s.T, s.vl, t) } : { h: interp(s.T, s.hv, t), s: interp(s.T, s.sv, t), v: NaN }; },
+    // Liquid at (T, P): interpolate between the two bracketing isobars at the same
+    // reduced temperature u = (T - T0) / (tsat(P) - T0), so both end at saturation.
+    liq(f, T, Pbar) {
+      const L = f.tab.liq, t = T - TK;
+      let i = 0; while (i < L.length - 2 && L[i + 1].p < Pbar) i++;
+      const a = L[i], b = L[i + 1] || a, T0 = a.T[0];
+      const ts = Math.min(tab.Tsat(f, Pbar), f.tab.tc - 0.3), u = (t - T0) / (ts - T0);
+      const at = iso => { const Ti = T0 + u * (iso.tsat - T0); return [interp(iso.T, iso.h, Ti), interp(iso.T, iso.s, Ti)]; };
+      const [ha, sa] = at(a), [hb, sb] = at(b), w = b.p > a.p ? (Pbar - a.p) / (b.p - a.p) : 0;
+      return { h: ha + w * (hb - ha), s: sa + w * (sb - sa), v: NaN };
+    },
+    vap(f, T) { const V = f.tab.vap, t = T - TK; return { h: interp(V.T, V.h, t), s: interp(V.T, V.s, t), v: NaN }; },
+  };
+  let MODEL = 'Peng–Robinson EOS (prototype)';
+  function useTables(fl, htf) {
+    if (fl && fl.fluids) {
+      for (const n in fl.fluids) {
+        const t = fl.fluids[n], f = FLUIDS[n]; if (!f) continue;
+        f.tab = t; f.tc = t.tc; f.pc = t.pc; f.pmax = Math.min(f.pmax, t.pmax); f._k = false; mk(n);
+      }
+      MODEL = 'CoolProp ' + (fl.version || '') + ' (HEOS)';
+    }
+    if (htf) for (const k in htf) if (HTF[k]) { HTF[k].T = htf[k].T; HTF[k].cp = htf[k].cp; buildHTF(k); }
+    satCache.clear(); wfCache.clear();
+  }
 
   // ---------- Heat transfer fluids: cp tables (kJ/kgK) vs degC ----------
   const HTF = {
@@ -95,7 +130,8 @@
     air: { label: 'Hot air (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.004, 1.006, 1.009, 1.015, 1.023, 1.033, 1.044] },
     vp1: { label: 'Therminol VP-1 (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.52, 1.68, 1.84, 1.99, 2.14, 2.28, 2.42] },
   };
-  for (const k in HTF) { // build fine h, s tables 0..260 C at 0.1 K
+  for (const k in HTF) buildHTF(k);
+  function buildHTF(k) { // build fine h, s tables 0..260 C at 0.1 K
     const t = HTF[k], N = 2601; t.tt = new Float64Array(N); t.hh = new Float64Array(N); t.ss = new Float64Array(N);
     const cpAt = x => interp(t.T, t.cp, x);
     for (let i = 0; i < N; i++) {
@@ -339,6 +375,6 @@
   function isobarL(name, pbar, Ta, Tb, n = 20) { const f = mk(name), P = pbar * 1e5; const o = []; for (let i = 0; i <= n; i++) { const T = Ta + (Tb - Ta) * i / n; o.push([props(f, T + TK, P, 'l').s, T]); } return o; }
   function isobarV(name, pbar, Ta, Tb, n = 20) { const f = mk(name), P = pbar * 1e5; const o = []; for (let i = 0; i <= n; i++) { const T = Ta + (Tb - Ta) * i / n; o.push([props(f, T + TK, P, 'v').s, T]); } return o; }
 
-  const api = { FLUIDS, HTF, DEF, mk, psat: (n, T) => psat(mk(n), T + TK) / 1e5, Tsat: (n, p) => Tsat(mk(n), p), wfSide, ohst, predictPinch, solveSimple, optimizeSimple, ohstFromSim, solveDual, optimizeDual, golden, pRange, dome, cpLiquid, isobarL, isobarV, hsH, hsS, hsT };
+  const api = { FLUIDS, HTF, DEF, mk, useTables, get MODEL() { return MODEL; }, psat: (n, T) => psat(mk(n), T + TK) / 1e5, Tsat: (n, p) => Tsat(mk(n), p), wfSide, ohst, predictPinch, solveSimple, optimizeSimple, ohstFromSim, solveDual, optimizeDual, golden, pRange, dome, cpLiquid, isobarL, isobarV, hsH, hsS, hsT };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ORC = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -37,8 +37,8 @@ FLUIDS = {
 T_COND = 20.0          # condensation temperature, degC (Table 1)
 T_MIN = -30.0          # lower end of the saturation table, degC
 DT_SAT = 0.5           # saturation-table step, K
-DT_LIQ = 0.5           # liquid-isobar step, K
-P_STEP = 0.5           # liquid-isobar pressure step, bar
+DT_LIQ = 1.0           # liquid-isobar step, K
+P_STEP = 1.0           # liquid-isobar pressure step, bar
 K = 273.15
 
 
@@ -78,8 +78,13 @@ def build_fluid(name):
 
     # Liquid isobars from T_COND - 2 K up to saturation, for the pump and preheater.
     liq = []
+    pressures = []
     p = max(p_cond, 0.5)
-    while p <= pmax + 1e-9:
+    while p < pmax - 1e-6:
+        pressures.append(p)
+        p = round(p + P_STEP, 6)
+    pressures.append(pmax)  # always include the exact pressure limit
+    for p in pressures:
         t_sat = CP.PropsSI("T", "P", p * 1e5, "Q", 0, cp_name) - K
         rows = {"T": [], "h": [], "s": []}
         t = T_COND - 2.0
@@ -90,8 +95,7 @@ def build_fluid(name):
         hl = CP.PropsSI("H", "P", p * 1e5, "Q", 0, cp_name) / 1e3
         sl = CP.PropsSI("S", "P", p * 1e5, "Q", 0, cp_name) / 1e3
         rows["T"].append(_r(t_sat, 3)); rows["h"].append(_r(hl)); rows["s"].append(_r(sl, 6))
-        liq.append({"p": _r(p, 3), "tsat": _r(t_sat, 3), **rows})
-        p = round(p + P_STEP, 6)
+        liq.append({"p": _r(p, 4), "tsat": _r(t_sat, 3), **rows})
 
     # Superheated vapour on the condenser isobar, for the turbine exhaust.
     vap = {"T": [], "h": [], "s": []}
