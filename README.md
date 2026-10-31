@@ -1,54 +1,54 @@
 # OHST Explorer
 
-Reproducción interactiva de las secciones 2–6 de:
+Interactive reproduction of Sections 2–6 of:
 
 > W. Liu, D. Meinel, C. Wieland, H. Spliethoff et al., *Optimal Heat Source Temperature for thermodynamic optimization of sub-critical Organic Rankine Cycles*, **Energy 88 (2015) 897–906**. doi:10.1016/j.energy.2015.07.040
 
-Página única con gráficas interactivas, animaciones, esquemas y ecuaciones con valores en vivo. Todas las cifras se calculan en el navegador a partir de las ecuaciones del artículo y de las condiciones de contorno de la Tabla 1.
+A single page with interactive charts, animations, schematics and equations with live values. Every number is computed in the browser from the paper's equations and the boundary conditions in Table 1.
 
-## Contenido
+## Contents
 
-| Sección | Qué incluye |
+| Section | What it covers |
 |---|---|
-| ¿Dónde está el pinch? | Comparación entre t_hs y el OHST (Eq. 20–22): recta numérica, veredicto y barrido animado (Fig. 4) |
-| §2 | Esquema del ciclo con flujo animado, diagrama T–s y tabla de estados (Fig. 1) |
-| §3 | Ecuaciones 1–10 con valores sustituidos, diagrama T–Q y balance de exergía (Fig. 2) |
-| §4 | Figs. 3 y 5–9: OHST, c_p sobre isobaras, efecto del HTF, curvas OHST de 13 fluidos, predicción frente a simulación |
-| §5 | Figs. 10–14: optimización de la presión de evaporación, comparación de fluidos y ORC de doble fluido |
-| §6 | Conclusiones contrastadas, tabla artículo frente a reproducción y puntos discutibles del artículo |
+| Where is the pinch? | t_hs compared with the OHST (Eq. 20–22): number line, verdict and animated sweep (Fig. 4) |
+| §2 | Cycle schematic with animated flow, T–s diagram and state table (Fig. 1) |
+| §3 | Equations 1–10 with substituted values, T–Q diagram and exergy balance (Fig. 2) |
+| §4 | Figs. 3 and 5–9: OHST, c_p along isobars, effect of the HTF, OHST curves for 13 fluids, prediction against simulation |
+| §5 | Figs. 10–14: evaporation-pressure optimisation, fluid comparison and dual-fluid ORC |
+| §6 | Conclusions checked, paper-against-reproduction table and points to question in the paper |
 
-## Estructura
+## Structure
 
-| Archivo | Función |
+| File | Purpose |
 |---|---|
-| `engine.js` | Motor termodinámico: EOS de Peng–Robinson, ciclo ORC, búsqueda del pinch, OHST, exergía, optimizador, ORC de doble fluido |
-| `page.html` | Interfaz (HTML, CSS y JS; gráficas con Plotly y ecuaciones con KaTeX desde CDN) |
-| `build.js` | Inserta `engine.js` en `page.html` y genera `dist/ohst-explorer.html` |
-| `check.js` | Compara el motor con los valores publicados en el artículo |
-| `uitest.js` | Ejecuta la lógica de la página sobre un DOM simulado en Node |
-| `dist/ohst-explorer.html` | Página compilada, autocontenida |
+| `engine.js` | Thermodynamic engine: Peng–Robinson EOS, ORC cycle, pinch search, OHST, exergy, optimiser, dual-fluid ORC |
+| `page.html` | User interface (HTML, CSS and JS; charts with Plotly and equations with KaTeX, both from a CDN) |
+| `build.js` | Inlines `engine.js` into `page.html` and writes `dist/ohst-explorer.html` |
+| `check.js` | Compares the engine with the values published in the paper |
+| `uitest.js` | Runs the page logic against a stubbed DOM in Node |
+| `dist/ohst-explorer.html` | Compiled, self-contained page |
 
-## Uso
+## Usage
 
 ```bash
-node build.js     # genera dist/ohst-explorer.html y comprueba la sintaxis
-node check.js     # motor frente a los valores del artículo
-node uitest.js    # prueba de la interfaz sin navegador
+node build.js     # builds dist/ohst-explorer.html and checks script syntax
+node check.js     # engine against the paper's values
+node uitest.js    # UI logic test without a browser
 ```
 
-Abre `dist/ohst-explorer.html` en un navegador; necesita conexión para cargar Plotly y KaTeX.
+Open `dist/ohst-explorer.html` in a browser. It needs a network connection to load Plotly and KaTeX.
 
-## Modelo de propiedades: limitaciones
+## Property model: limitations
 
-El artículo usa REFPROP 9.0. Este prototipo usa una EOS de Peng–Robinson con c_p de gas ideal anclado a la Tabla 2, así que los valores se desvían unos pocos por ciento, sobre todo cerca del punto crítico.
+The paper uses REFPROP 9.0. This prototype uses a Peng–Robinson EOS with ideal-gas c_p anchored to Table 2, so values deviate by a few percent, most near the critical point.
 
-| Magnitud | Artículo | Prototipo |
+| Quantity | Paper | Prototype |
 |---|---|---|
-| t_evp de R245fa a 19,2 bar | 119,7 °C | 119,7 °C |
-| η_sys de R227ea a 28 bar, 140 °C | 10,38 % | 10,00 % |
-| OHST de R227ea a 28 bar (Eq. 15) | 129,7 °C | 123,6 °C |
-| Desviación media, Eq. 15 frente a simulación | 0,81 % | 4,45 % |
-| Mejor fluido a 140 °C | R227ea | R227ea |
-| η_sys del ORC de doble fluido (R245fa + R227ea) | 11,07 % | 9,97 % |
+| t_evp of R245fa at 19.2 bar | 119.7 °C | 119.7 °C |
+| η_sys of R227ea at 28 bar, 140 °C | 10.38 % | 10.00 % |
+| OHST of R227ea at 28 bar (Eq. 15) | 129.7 °C | 123.6 °C |
+| Mean deviation, Eq. 15 against simulation | 0.81 % | 4.45 % |
+| Best fluid at 140 °C | R227ea | R227ea |
+| η_sys of the dual-fluid ORC (R245fa + R227ea) | 11.07 % | 9.97 % |
 
-La ganancia del ORC de doble fluido no se reproduce. Siguiente paso previsto: sustituir el modelo por tablas generadas con CoolProp.
+The dual-fluid ORC gain is not reproduced. Planned next step: replace the property model with tables generated by CoolProp.
