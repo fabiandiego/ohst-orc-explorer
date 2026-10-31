@@ -1,0 +1,1395 @@
+<title>OHST Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: an engineering datasheet. Ruled title block, sticky operating-point strip, one ruled band per paper section, square-framed figures with figure numbers in the frame header. */
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --ink: #111418; --ink-2: #3c444e; --ink-3: #5a626c; --rule: #d3d8de; --rule-2: #a9b1bb; --soft: #edf0f3;
+  --op: #a3238e; --op-ink: #ffffff;
+  --wf: #2a78d6; --hs: #d93b3a; --cw: #1baf7a; --c7: #6250d6; --c6: #008300; --ctx: #bcc3cb;
+  --good: #1d7a3a; --warn: #9a5c00; --crit: #b3261e;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --barH: 64px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111316; --panel: #181b1f; --ink: #eceef0; --ink-2: #c1c7ce; --ink-3: #979ea7; --rule: #2c3137; --rule-2: #4b535c; --soft: #21252b;
+  --op: #e584d6; --op-ink: #111316;
+  --wf: #4b93ea; --hs: #ec6a68; --cw: #22b07e; --c7: #9a90ec; --c6: #46ad52; --ctx: #474e56;
+  --good: #5fbf7d; --warn: #e0a23a; --crit: #f07068; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #111316; --panel: #181b1f; --ink: #eceef0; --ink-2: #c1c7ce; --ink-3: #979ea7; --rule: #2c3137; --rule-2: #4b535c; --soft: #21252b;
+  --op: #e584d6; --op-ink: #111316;
+  --wf: #4b93ea; --hs: #ec6a68; --cw: #22b07e; --c7: #9a90ec; --c6: #46ad52; --ctx: #474e56;
+  --good: #5fbf7d; --warn: #e0a23a; --crit: #f07068; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { scrollbar-color: var(--rule-2) var(--bg); }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); margin: 0; caret-color: var(--op); accent-color: var(--op); }
+::selection { background: var(--op); color: var(--op-ink); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.6rem, 3.2vw, 2.35rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.005em; }
+h2 { font-size: clamp(1.45rem, 2.4vw, 1.9rem); font-weight: 600; line-height: 1.15; }
+h3 { font-size: 1.04rem; font-weight: 600; line-height: 1.25; }
+p { margin: 0; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+a { color: var(--op); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--op); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+sub { font-size: 0.72em; }
+
+/* title block */
+.tb { margin-block: 22px 18px; border: 1.5px solid var(--ink); background: var(--panel); display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr); }
+.tb > div { padding: 10px 14px; border-right: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-2); min-width: 0; display: grid; gap: 3px; align-content: start; }
+.tb .k { font: 500 0.75rem var(--f-mono); color: var(--ink-3); }
+.tb .v { font-size: 0.9rem; }
+.tb .ttl { grid-row: span 2; gap: 10px; }
+.tb .ttl p { color: var(--ink-2); max-width: 64ch; }
+.tb .wide { grid-column: span 2; }
+.tb .last { border-right: 0; }
+.tb .bottom { border-bottom: 0; }
+.tb details summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.tb details[open] summary { margin-bottom: 8px; }
+.nomen { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2px 18px; font-size: 0.84rem; }
+.nomen div { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr); gap: 8px; border-bottom: 1px dotted var(--rule); padding-block: 3px; }
+.nomen b { font-family: var(--f-mono); font-weight: 500; }
+.nomen span { color: var(--ink-2); }
+@media (max-width: 820px) { .tb { grid-template-columns: minmax(0, 1fr); } .tb > div { border-right: 0; } .tb .wide { grid-column: auto; } .tb .ttl { grid-row: auto; } }
+
+/* operating-point strip */
+.opbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--panel); border-block: 1.5px solid var(--ink); }
+.opbar .wrap { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: end; padding-block: 8px; }
+.ctlset { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: end; }
+.ctl { display: grid; gap: 2px; min-width: 0; }
+.ctl label, .ctl .lab { font: 500 0.78rem var(--f-body); color: var(--ink-3); display: flex; gap: 6px; align-items: baseline; }
+.ctl .hint { font: 0.75rem var(--f-mono); color: var(--ink-3); }
+.pair { display: flex; gap: 6px; align-items: center; }
+.ctl input[type=range] { width: 130px; }
+input[type=number] { width: 4.6rem; font: 500 0.86rem var(--f-mono); color: var(--ink); background: var(--soft); border: 1px solid var(--rule-2); border-radius: 0; padding: 3px 5px; }
+select, button { font: 500 0.86rem var(--f-body); color: var(--ink); background: var(--soft); border: 1px solid var(--rule-2); border-radius: 0; padding: 5px 9px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--ink); }
+button:disabled { opacity: 0.55; cursor: progress; }
+button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.readouts { margin-left: auto; display: flex; border: 1px solid var(--rule-2); }
+.ro { padding: 3px 10px; border-right: 1px solid var(--rule-2); display: grid; min-width: 0; }
+.ro:last-child { border-right: 0; }
+.ro .k { font: 500 0.75rem var(--f-mono); color: var(--ink-3); }
+.ro .v { font: 500 0.92rem var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.ro .v i { width: 9px; height: 9px; display: inline-block; background: var(--ink-3); }
+.ro.ok .v i { background: var(--good); } .ro.warn .v i { background: var(--warn); } .ro.bad .v i { background: var(--crit); }
+.papertag { font: 600 0.75rem var(--f-mono); color: var(--op); border: 1px solid var(--op); padding: 1px 6px; }
+.optoggle { display: none; }
+@media (max-width: 760px) {
+  .optoggle { display: inline-flex; gap: 6px; align-items: center; }
+  .opbar:not(.open) .ctlset { display: none; }
+  .readouts { margin-left: 0; width: 100%; }
+  .ro { flex: 1; } .ctl input[type=range] { width: 120px; }
+}
+
+/* bands and frames */
+section.band { padding-block: 34px 6px; scroll-margin-top: calc(var(--barH) + 12px); }
+.sechead { display: flex; gap: 14px; align-items: baseline; border-top: 2px solid var(--ink); padding-top: 10px; margin-bottom: 8px; }
+.secno { font: 600 clamp(1.45rem, 2.4vw, 1.9rem)/1.15 var(--f-display); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.secintro { color: var(--ink-2); max-width: 78ch; margin-bottom: 18px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); margin-bottom: 16px; }
+.frame { background: var(--panel); border: 1px solid var(--rule-2); min-width: 0; display: grid; align-content: start; }
+.frame > .body { padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+.ph { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--rule-2); padding: 7px 14px; }
+.ph .fig { font: 600 0.74rem var(--f-mono); color: var(--ink-2); border-right: 1px solid var(--rule); padding-right: 10px; white-space: nowrap; }
+.ph h3 { flex: 1 1 12rem; min-width: 0; }
+.scope { font: 0.75rem var(--f-mono); color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.scope::before { content: ""; width: 7px; height: 7px; border: 1.5px solid var(--ink-3); }
+.scope.live::before { background: var(--op); border-color: var(--op); }
+.span-12 { grid-column: span 12; } .span-7 { grid-column: span 7; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } .span-4 { grid-column: span 4; } .span-8 { grid-column: span 8; }
+@media (max-width: 900px) { .span-7, .span-5, .span-6, .span-4, .span-8 { grid-column: span 12; } }
+.cap { font-size: 0.86rem; color: var(--ink-2); max-width: 80ch; }
+.plot { width: 100%; height: 340px; }
+.plot.tall { height: 420px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: end; }
+.stale { opacity: 0.5; transition: opacity 0.15s; }
+.state-msg { font-size: 0.9rem; color: var(--ink-2); border: 1px dashed var(--rule-2); padding: 10px 12px; }
+
+/* hero */
+.hero .body { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 18px; }
+@media (max-width: 900px) { .hero .body { grid-template-columns: minmax(0, 1fr); } }
+.verdict { font: 500 1.08rem/1.45 var(--f-body); max-width: 46ch; }
+.verdict b { font-weight: 600; }
+svg.nl { width: 100%; height: auto; display: block; overflow: visible; }
+svg.nl text { font: 500 12px var(--f-mono); fill: var(--ink-2); }
+svg.nl .axis { stroke: var(--ink); stroke-width: 1.5; }
+svg.nl .tick { stroke: var(--rule-2); }
+svg.nl .zoneA { fill: var(--hs); opacity: 0.1; } svg.nl .zoneB { fill: var(--wf); opacity: 0.1; }
+svg.nl .zl { font: 500 11px var(--f-body); fill: var(--ink-2); }
+
+/* schematic (process-flow style) */
+svg.schem { width: 100%; height: auto; display: block; }
+svg.schem .box { fill: var(--panel); stroke: var(--ink); stroke-width: 1.4; }
+svg.schem .coil { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+svg.schem .lbl { fill: var(--ink-2); font: 500 11px var(--f-body); }
+svg.schem .st { fill: var(--panel); stroke: var(--ink); stroke-width: 1.2; }
+svg.schem .stn { fill: var(--ink); font: 600 10.5px var(--f-mono); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+svg.schem .pipe { fill: none; stroke-width: 2.6; stroke-linecap: square; }
+svg.schem .flow { fill: none; stroke-width: 2.6; stroke-dasharray: 4 10; animation: flow 1.2s linear infinite; }
+svg.schem .comp { cursor: pointer; }
+svg.schem .comp:hover .box, svg.schem .comp.on .box { stroke: var(--op); stroke-width: 2.4; }
+svg.schem .val { fill: var(--ink-2); font: 500 9.5px var(--f-mono); }
+svg.schem .pinch circle { fill: none; stroke: var(--op); stroke-width: 2; }
+svg.schem .pinch text { fill: var(--op); font: 600 10.5px var(--f-mono); }
+@keyframes flow { to { stroke-dashoffset: -14; } }
+@media (prefers-reduced-motion: reduce) { svg.schem .flow { animation: none; } }
+@media (max-width: 600px) { svg.schem .val { font-size: 13px; } svg.schem .lbl { font-size: 14px; } svg.schem .stn { font-size: 13px; } svg.schem .pinch text { font-size: 14px; } svg.nl text { font-size: 15px; } svg.nl .zl { font-size: 14px; } }
+
+/* tables */
+.tblwrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+caption { text-align: left; font: 500 0.78rem var(--f-body); color: var(--ink-3); padding-bottom: 4px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+thead th { font: 600 0.76rem var(--f-body); color: var(--ink-2); border-bottom: 1.5px solid var(--ink); }
+td:first-child, th:first-child { text-align: left; }
+td { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+td.txt { font-family: var(--f-body); text-align: left; white-space: normal; min-width: 14rem; }
+tr.sel td { background: var(--soft); font-weight: 600; }
+
+/* equation ledger */
+.ledger { display: grid; }
+.ledger .state-msg { margin-bottom: 6px; }
+.eq { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: 4px 12px; padding-block: 11px; border-bottom: 1px solid var(--rule); }
+.eq:last-child { border-bottom: 0; }
+.eqno { font: 600 0.8rem var(--f-mono); color: var(--ink-2); padding-top: 4px; }
+.eqbody { min-width: 0; display: grid; gap: 4px; }
+.tex { overflow-x: auto; font-size: 1.08rem; padding-block: 2px; }
+.tex math { font-size: 1.08rem; }
+.eqmean { font-size: 0.88rem; color: var(--ink-2); }
+.eqlive { font: 0.82rem var(--f-mono); color: var(--ink); background: var(--soft); border-left: 1px solid var(--op); padding: 3px 8px; justify-self: start; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+.eqhide { font-size: 0.8rem; color: var(--ink-3); }
+.eqhide b { color: var(--ink-2); font-weight: 600; }
+.ledger.off .eqlive { display: none; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); border-top: 1px solid var(--rule-2); border-left: 1px solid var(--rule-2); }
+.kpi { border-right: 1px solid var(--rule-2); border-bottom: 1px solid var(--rule-2); padding: 7px 10px; display: grid; gap: 2px; }
+.kpi .v { font: 500 1.15rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.kpi .k { font: 500 0.76rem var(--f-body); color: var(--ink-3); }
+.kpi .d { font: 0.75rem var(--f-mono); color: var(--ink-3); }
+.issues { display: grid; gap: 0; }
+.issue { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 8px; border-bottom: 1px solid var(--rule); padding-block: 9px; }
+.issue .n { font: 600 0.86rem var(--f-mono); color: var(--ink-3); }
+.issue p { font-size: 0.9rem; color: var(--ink-2); }
+ul.checks { list-style: none; padding: 0; margin: 0; display: grid; }
+ul.checks li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: 8px; font-size: 0.9rem; color: var(--ink-2); border-bottom: 1px solid var(--rule); padding-block: 9px; }
+ul.checks li:last-child { border-bottom: 0; }
+ul.checks svg { width: 16px; height: 16px; margin-top: 3px; }
+ul.checks li.ok svg { color: var(--good); } ul.checks li.part svg { color: var(--warn); } ul.checks li.no svg { color: var(--crit); }
+ul.checks b { color: var(--ink); font-weight: 600; }
+footer { border-top: 2px solid var(--ink); padding-block: 16px 40px; color: var(--ink-3); font-size: 0.82rem; margin-top: 24px; }
+.busy { font: 0.76rem var(--f-mono); color: var(--ink-3); }
+@media (max-width: 600px) { .plot { height: 300px; } .plot.tall { height: 360px; } }
+</style>
+
+<header class="wrap">
+  <div class="tb">
+    <div class="ttl">
+      <h1>Optimal Heat Source Temperature for sub-critical Organic Rankine Cycles</h1>
+      <p>An interactive reading of Sections 2–6. Every figure is recomputed in your browser from the paper's equations and Table 1 boundary conditions. Set an operating point in the strip below and follow where the pinch goes.</p>
+    </div>
+    <div><span class="k">Source</span><span class="v">Liu, Meinel, Gleinser, Wieland, Spliethoff. <i>Energy</i> 88 (2015) 897–906</span></div>
+    <div class="last"><span class="k">DOI</span><span class="v num">10.1016/j.energy.2015.07.040</span></div>
+    <div><span class="k">Boundary conditions (Table 1)</span><span class="v">ṁ<sub>hs</sub> 2 kg/s · t<sub>cond</sub> 20 °C · t<sub>0</sub> 7 °C · η<sub>is,p</sub> 0.8</span></div>
+    <div class="last"><span class="k">Property model</span><span class="v">Peng–Robinson EOS, prototype. The paper used REFPROP 9.0, so values can differ by a few percent, most near the critical point. §6 lists every deviation.</span></div>
+    <div class="wide bottom"><details><summary>Nomenclature</summary><div class="nomen" id="nomen"></div></details></div>
+    <div class="last bottom"><span class="k">Sections</span><span class="v"><a href="#hero">Pinch</a> · <a href="#s2">§2</a> · <a href="#s3">§3</a> · <a href="#s4">§4</a> · <a href="#s5">§5</a> · <a href="#s6">§6</a></span></div>
+  </div>
+</header>
+
+<div class="opbar" id="opbar">
+  <div class="wrap">
+    <button class="optoggle" id="optoggle" aria-expanded="false" aria-controls="ctlset">Operating point <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <div class="ctlset" id="ctlset">
+      <div class="ctl"><label for="fluid">Working fluid</label><select id="fluid"></select></div>
+      <div class="ctl"><label for="pevp">Evaporation pressure p<sub>evp</sub> [bar]</label><div class="pair"><input id="pevp" type="range" step="0.05"><input id="pevpN" type="number" step="0.1" aria-label="Evaporation pressure in bar"></div><span class="hint" id="pevpH"></span></div>
+      <div class="ctl"><label for="ths">Heat source t<sub>hs</sub> [°C]</label><div class="pair"><input id="ths" type="range" min="80" max="220" step="0.5" value="140"><input id="thsN" type="number" min="80" max="220" step="0.5" value="140" aria-label="Heat source temperature in degrees Celsius"></div><span class="hint" id="thsH"></span></div>
+      <div class="ctl"><label for="dtpp">Pinch Δt<sub>pp</sub> <span class="num" id="dtppO"></span></label><input id="dtpp" type="range" min="2" max="20" step="0.5" value="10"></div>
+      <div class="ctl"><label for="etaT">Turbine η<sub>is,t</sub> <span class="num" id="etaTO"></span></label><input id="etaT" type="range" min="0.6" max="1" step="0.01" value="0.9"></div>
+      <div class="ctl"><label for="htf">Heat transfer fluid</label><select id="htf"><option value="water">Thermal water</option><option value="air">Hot air</option><option value="vp1">Therminol VP-1</option></select></div>
+      <div class="ctl"><span class="lab">&nbsp;</span><button id="reset">Reset to paper case</button></div>
+    </div>
+    <div class="readouts">
+      <div class="ro" id="roOhst"><span class="k">OHST (Eq. 15)</span><span class="v"><span></span></span></div>
+      <div class="ro" id="roPinch"><span class="k">Pinch</span><span class="v"><i></i><span></span></span></div>
+      <div class="ro" id="roEta"><span class="k">η<sub>sys</sub></span><span class="v"><span></span><span class="papertag" id="papertag" hidden>paper case</span></span></div>
+    </div>
+    <div class="sr" aria-live="polite" id="announce"></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<!-- ======================= HERO ======================= -->
+<section class="band" id="hero">
+  <div class="sechead"><h2>Where is the pinch?</h2></div>
+  <p class="secintro">The paper's central result fits on one line: compare the heat source temperature t<sub>hs</sub> with the fluid's OHST. Below the OHST the pinch sits at the evaporator inlet and heat is left unused. Above it the pinch moves to the preheater side and η<sub>sys</sub> stops rising.</p>
+  <div class="frame hero">
+    <div class="ph"><span class="fig">Fig. 4 · Eq. 20–22</span><h3>Source temperature against OHST</h3><span class="scope live">live: fluid · p<sub>evp</sub> · t<sub>hs</sub> · Δt<sub>pp</sub></span></div>
+    <div class="body">
+      <div style="display:grid;gap:14px;align-content:start;min-width:0">
+        <svg class="nl" id="nl" viewBox="0 0 520 120" role="img" aria-label="Number line comparing heat source temperature with OHST"></svg>
+        <p class="verdict" id="verdict"></p>
+        <div class="row"><button id="sweepBtn" aria-pressed="false">Sweep t<sub>hs</sub> across the OHST</button><span class="busy" id="sweepNote"></span></div>
+        <p class="cap">The sweep moves t<sub>hs</sub> through the OHST and back. Watch the pinch marker (Δt<sub>pp</sub>) jump from the evaporator inlet to the preheater side.</p>
+      </div>
+      <div style="min-width:0"><div id="fig4" class="plot" role="img"></div><p class="cap" id="fig4cap"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= §2 ======================= -->
+<section class="band" id="s2">
+  <div class="sechead"><span class="secno">§2</span><h2>The simple sub-critical ORC</h2></div>
+  <p class="secintro">Pump 1→2, preheater 2→3, evaporator 3→4, turbine 4→5, condenser 5→1. The heat source enters the evaporator at 6, passes to the preheater at 7 and leaves at 8. Select a component to trace its process on the T–s diagram.</p>
+  <div class="grid">
+    <div class="frame span-5">
+      <div class="ph"><span class="fig">Fig. 1a</span><h3>Plant schematic</h3><span class="scope live">live</span></div>
+      <div class="body">
+        <svg class="schem" id="schem" viewBox="0 0 520 350" role="group" aria-label="ORC schematic. Components are buttons that highlight their process on the T–s diagram."></svg>
+        <p class="cap">Blue: working fluid. Red: heat source. Green: cooling water. The ring marks the current pinch.</p>
+      </div>
+    </div>
+    <div class="frame span-7">
+      <div class="ph"><span class="fig">Fig. 1b</span><h3>T–s diagram</h3><span class="scope live">live</span><button id="tsPlay" aria-pressed="false">Animate cycle</button></div>
+      <div class="body"><div id="tsPlot" class="plot tall" role="img"></div></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-12">
+      <div class="ph"><span class="fig">States</span><h3>State points</h3><span class="scope live">live</span></div>
+      <div class="body"><div class="tblwrap"><table id="stateTbl"></table></div><p class="cap" id="stateNote"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= §3 ======================= -->
+<section class="band" id="s3">
+  <div class="sechead"><span class="secno">§3</span><h2>Thermodynamic analysis</h2></div>
+  <p class="secintro">The objective is the global system efficiency η<sub>sys</sub> = η<sub>th</sub>·η<sub>HE</sub>. It rewards a good cycle and a heat exchanger that takes as much heat from the source as possible. Each equation shows its value at the current operating point.</p>
+  <div class="grid">
+    <div class="frame span-7">
+      <div class="ph"><span class="fig">Eq. 1–10</span><h3>Equation ledger</h3><span class="scope live">live</span></div>
+      <div class="body"><div class="ledger" id="ledger3"></div></div>
+    </div>
+    <div class="frame span-5">
+      <div class="ph"><span class="fig">Fig. 2</span><h3>Heat transfer T–Q</h3><span class="scope live">live</span></div>
+      <div class="body"><div id="tq3" class="plot" role="img"></div><p class="cap" id="tq3cap"></p></div>
+      <div class="ph" style="border-top:1px solid var(--rule-2)"><span class="fig">Eq. 8–10</span><h3>Where the source exergy goes</h3></div>
+      <div class="body"><div id="exBar" class="plot" style="height:220px" role="img"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= §4 ======================= -->
+<section class="band" id="s4">
+  <div class="sechead"><span class="secno">§4</span><h2>Optimal Heat Source Temperature</h2></div>
+  <p class="secintro">At a fixed evaporation pressure, η<sub>sys</sub> rises steeply with source temperature and then flattens. The bend is the OHST. There the preheater profiles run parallel, so the pinch touches the evaporator inlet and the preheater inlet together.</p>
+  <div class="grid">
+    <div class="frame span-7">
+      <div class="ph"><span class="fig">Fig. 3</span><h3>Efficiencies against source temperature</h3><span class="scope live">live: fluid · p<sub>evp</sub> · Δt<sub>pp</sub></span></div>
+      <div class="body"><div id="fig3" class="plot" role="img"></div><p class="cap">Solid: η<sub>sys</sub>. Dashed: exergetic efficiency of the heat exchanger, η<sub>ex,HE</sub>. Vertical lines: OHST from Eq. 15 and from the maximum of η<sub>ex,HE</sub> in cycle simulation.</p></div>
+    </div>
+    <div class="frame span-5">
+      <div class="ph"><span class="fig">Eq. 11–15</span><h3>Ideal parallel preheating</h3><span class="scope live">live</span></div>
+      <div class="body"><div class="ledger" id="ledger4"></div></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-7">
+      <div class="ph"><span class="fig">Fig. 5 · Eq. 16–18</span><h3>Liquid heat capacity on isobars</h3><span class="scope">own fluid · 10–30 bar</span>
+        <select id="f5fluid" aria-label="Fluid for Fig. 5"></select></div>
+      <div class="body"><div id="fig5" class="plot" role="img"></div><p class="cap">c<sub>p</sub> climbs toward saturation, so the paper integrates it in 0.1 K steps (Eq. 17) instead of using one value. Dashed: the resulting mean c̄<sub>p,pre,wf</sub> that enters Eq. 15.</p></div>
+    </div>
+    <div class="frame span-5">
+      <div class="ph"><span class="fig">Fig. 6 · Eq. 19</span><h3>Is the HTF heat capacity constant?</h3><span class="scope">fixed: three HTFs</span></div>
+      <div class="body"><div id="fig6" class="plot" role="img"></div><p class="cap">Eq. 19 is called a relative standard deviation, but it is a pointwise deviation from the mean, so it changes sign.</p></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-12">
+      <div class="ph"><span class="fig">Fig. 7</span><h3>The OHST depends on the HTF</h3><span class="scope">fixed: R1234yf · 0.7 p<sub>c</sub> · Δt<sub>pp</sub> 10 K</span></div>
+      <div class="body"><div id="fig7" class="plot" role="img"></div><p class="cap" id="fig7cap"></p></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-8">
+      <div class="ph"><span class="fig">Fig. 8 · §4.4</span><h3>OHST curves for all fluids</h3><span class="scope live">live: t<sub>hs</sub> · Δt<sub>pp</sub></span></div>
+      <div class="body"><div id="fig8" class="plot tall" role="img"></div><p class="cap">Above a fluid's curve (t<sub>hs</sub> &gt; OHST) the pinch is on the preheater side and η<sub>sys</sub> keeps rising with pressure (fluid II). Below it the pinch is at the evaporator inlet and an intermediate optimum exists (fluid I). Highlighted: your fluid and the three closest to t<sub>hs</sub>. Hover the grey curves to identify them.</p></div>
+    </div>
+    <div class="frame span-4">
+      <div class="ph"><span class="fig">§4.4 · §6</span><h3>Screening by |OHST − t<sub>hs</sub>|</h3><span class="scope live">live</span></div>
+      <div class="body"><div class="tblwrap"><table id="rankTbl"></table></div><p class="cap">OHST at each fluid's maximum allowable pressure. The paper's rule: rank by distance to t<sub>hs</sub>, then simulate the closest.</p></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-12">
+      <div class="ph"><span class="fig">Fig. 9</span><h3>Prediction against simulation</h3><span class="scope">13 fluids · thermal water · live Δt<sub>pp</sub></span><button id="runFig9" class="primary">Run comparison</button></div>
+      <div class="body">
+        <div class="grid" style="margin:0"><div class="span-6" style="min-width:0"><div id="fig9a" class="plot" role="img"></div></div><div class="span-6" style="min-width:0"><div id="fig9b" class="plot" role="img"></div></div></div>
+        <p class="cap" id="fig9cap">Runs Eq. 15 and a cycle-simulation search for each fluid at 0.5 p<sub>c</sub>, 0.7 p<sub>c</sub> and the maximum allowable pressure.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= §5 ======================= -->
+<section class="band" id="s5">
+  <div class="sechead"><span class="secno">§5</span><h2 id="s5title">Case study: thermal water at 140 °C</h2></div>
+  <p class="secintro">Evaporation pressure is the only optimisation variable. Fluids whose OHST lies above t<sub>hs</sub> have an interior optimum (OEP); for the rest, the highest allowable pressure wins. A dual-fluid ORC then splits the source between a high- and a low-temperature loop. <span id="s5note"></span></p>
+  <div class="grid" id="s5grid1">
+    <div class="frame span-5 slow">
+      <div class="ph"><span class="fig">Fig. 10</span><h3>η<sub>sys</sub> against evaporation pressure</h3><span class="scope live">live: t<sub>hs</sub> · own fluids</span></div>
+      <div class="body">
+        <div class="row"><div class="ctl"><label for="f10a">Fluid I</label><select id="f10a"></select></div><div class="ctl"><label for="f10b">Fluid II</label><select id="f10b"></select></div></div>
+        <div id="fig10" class="plot" role="img"></div><p class="cap" id="fig10cap"></p>
+      </div>
+    </div>
+    <div class="frame span-7 slow">
+      <div class="ph"><span class="fig">Fig. 11</span><h3>All fluids, optimised</h3><span class="scope live">live: t<sub>hs</sub> · Δt<sub>pp</sub> · η<sub>is,t</sub> · HTF</span><span class="busy" id="f11busy"></span></div>
+      <div class="body"><div id="fig11" class="plot" role="img"></div><div class="tblwrap"><table id="f11tbl"></table></div></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-5 slow">
+      <div class="ph"><span class="fig">Fig. 12</span><h3>Two pinch regimes side by side</h3><span class="scope">fixed fluids · live t<sub>hs</sub></span></div>
+      <div class="body"><div id="fig12" class="plot" role="img"></div><p class="cap">R227ea at 28 bar has its pinch on the preheater side. R245fa at 20 bar has its pinch at the evaporator inlet and returns the water much hotter (dotted lines), leaving most of the heat unused.</p></div>
+    </div>
+    <div class="frame span-7 slow">
+      <div class="ph"><span class="fig">Fig. 13 · Eq. 23–24</span><h3>Dual-fluid ORC</h3><span class="scope live">live: t<sub>hs</sub> · own controls</span></div>
+      <div class="body">
+        <svg class="schem" id="dualSchem" viewBox="0 0 620 300" role="img" aria-label="Dual-fluid ORC: the thermal water evaporates R245fa in the HT loop, then splits between the LT loop and the HT preheater"></svg>
+        <div class="row">
+          <div class="ctl"><label for="dLt">LT fluid</label><select id="dLt"><option>R227ea</option><option>R1234yf</option></select></div>
+          <div class="ctl"><label for="dPht">p<sub>evp,HT</sub> of R245fa <span class="num" id="dPhtO"></span></label><input id="dPht" type="range" min="8" max="30" step="0.1" value="19.2"></div>
+          <div class="ctl"><label for="dSplit">Water to HT preheater <span class="num" id="dSplitO"></span></label><input id="dSplit" type="range" min="0" max="1" step="0.005" value="0"></div>
+          <button id="dOpt" class="primary">Optimise (paper's two steps)</button>
+        </div>
+        <div class="kpis" id="dualKpi"></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-12 slow">
+      <div class="ph"><span class="fig">Fig. 14</span><h3>Dual-fluid heat transfer, per loop</h3><span class="scope live">follows Fig. 13</span></div>
+      <div class="body">
+        <div class="grid" style="margin:0"><div class="span-6" style="min-width:0"><div id="fig14a" class="plot" role="img"></div></div><div class="span-6" style="min-width:0"><div id="fig14b" class="plot" role="img"></div></div></div>
+        <p class="cap" id="fig14cap"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= §6 ======================= -->
+<section class="band" id="s6">
+  <div class="sechead"><span class="secno">§6</span><h2>Conclusions, checked</h2></div>
+  <p class="secintro">Each claim from the paper's conclusion, and whether this reproduction supports it. The table recomputes every number the paper reports at the paper's own conditions, independent of the operating point above.</p>
+  <div class="grid">
+    <div class="frame span-6">
+      <div class="ph"><span class="fig">§6</span><h3>The paper's claims</h3></div>
+      <div class="body"><ul class="checks" id="claims"></ul></div>
+    </div>
+    <div class="frame span-6">
+      <div class="ph"><span class="fig">Repro</span><h3>Paper against this reproduction</h3><span class="scope">fixed: paper conditions</span><span class="busy" id="reproBusy"></span></div>
+      <div class="body"><div class="tblwrap"><table id="repro"></table></div></div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="frame span-12">
+      <div class="ph"><span class="fig">Notes</span><h3>Points to question in the paper</h3></div>
+      <div class="body"><div class="issues" id="issues"></div></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="wrap">Reproduction of W. Liu et al., <i>Energy</i> 88 (2015) 897–906. Property model: Peng–Robinson with ideal-gas c<sub>p</sub> anchored to Table 2 (prototype). Charts: plotly.js; equations: KaTeX.</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-basic-dist-min@2.35.2/plotly-basic.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script>
+// ORC-OHST engine: Peng-Robinson EOS + ORC cycle, pinch search, OHST, exergy, optimizer, dual-fluid.
+// Prototype property model (not REFPROP/CoolProp). Units: T in degC at API level, K internally; p in bar; h kJ/kg; s kJ/(kg K).
+(function (root) {
+  const RU = 8.314462618; // J/(mol K)
+  const TK = 273.15;
+  const SQ2 = Math.SQRT2;
+
+  // Tc [degC], pc [bar], omega, M [g/mol], cp0 at 20 C [kJ/kgK] (Table 2), pmax [bar] (Table 2)
+  // omega and M are literature values; R152a is absent from Table 2 but plotted in Fig. 11.
+  const FLUIDS = {
+    'R1233zd(E)': { tc: 165.6, pc: 35.73, w: 0.3025, M: 130.50, cp20: 0.8197, pmax: 30, gwp: 5, inTable: true },
+    'R1234ze(Z)': { tc: 150.12, pc: 35.33, w: 0.3274, M: 114.04, cp20: 0.8516, pmax: 30, gwp: 6, inTable: true },
+    'R245fa': { tc: 154.01, pc: 36.51, w: 0.3776, M: 134.05, cp20: 0.9176, pmax: 30, gwp: 1030, inTable: true },
+    'R142b': { tc: 137.11, pc: 40.55, w: 0.2321, M: 100.50, cp20: 0.8454, pmax: 30, gwp: 2310, inTable: true },
+    'R236ea': { tc: 139.29, pc: 35.02, w: 0.3794, M: 152.04, cp20: 0.8657, pmax: 30, gwp: 1410, inTable: true },
+    'R152a': { tc: 113.26, pc: 45.17, w: 0.2752, M: 66.05, cp20: 1.0130, pmax: 30, gwp: 124, inTable: false },
+    'R124': { tc: 122.28, pc: 36.24, w: 0.2881, M: 136.48, cp20: 0.7357, pmax: 30, gwp: 609, inTable: true },
+    'R236fa': { tc: 124.92, pc: 32.00, w: 0.3772, M: 152.04, cp20: 0.8332, pmax: 30, gwp: 9810, inTable: true },
+    'R1234ze(E)': { tc: 109.37, pc: 36.36, w: 0.3130, M: 114.04, cp20: 0.8791, pmax: 30, gwp: 6, inTable: true },
+    'R134a': { tc: 101.06, pc: 40.59, w: 0.3268, M: 102.03, cp20: 0.8435, pmax: 30, gwp: 1430, inTable: true },
+    'R1234yf': { tc: 94.7, pc: 33.82, w: 0.2760, M: 114.04, cp20: 0.8963, pmax: 30, gwp: 4, inTable: true },
+    'R227ea': { tc: 101.75, pc: 29.25, w: 0.3570, M: 170.03, cp20: 0.8061, pmax: 28, gwp: 3220, inTable: true },
+    'R218': { tc: 71.87, pc: 26.4, w: 0.3172, M: 188.02, cp20: 0.7896, pmax: 26, gwp: 8830, inTable: true },
+  };
+  const CP0_EXP = 0.6; // cp0(T) = cp20 * (T/293.15)^n, generic exponent for halocarbons
+
+  function mk(name) {
+    const f = FLUIDS[name];
+    if (f._k) return f;
+    f.name = name;
+    f.Tc = f.tc + TK; f.Pc = f.pc * 1e5; f.R = RU / f.M; // kJ/kgK (J/molK / g/mol)
+    f.kap = 0.37464 + 1.54226 * f.w - 0.26992 * f.w * f.w;
+    f.ac = 0.45724 * RU * RU * f.Tc * f.Tc / f.Pc; f.b = 0.07780 * RU * f.Tc / f.Pc;
+    f.Tref = 273.15; f._k = true;
+    return f;
+  }
+  function aT(f, T) { const s = 1 + f.kap * (1 - Math.sqrt(T / f.Tc)); return f.ac * s * s; }
+  function daT(f, T) { const s = 1 + f.kap * (1 - Math.sqrt(T / f.Tc)); return -f.ac * f.kap * s / Math.sqrt(T * f.Tc); }
+
+  function cubicRoots(c2, c1, c0) { // z^3 + c2 z^2 + c1 z + c0
+    const q = (3 * c1 - c2 * c2) / 9, r = (9 * c2 * c1 - 27 * c0 - 2 * c2 * c2 * c2) / 54;
+    const D = q * q * q + r * r;
+    if (D > 0) { const sD = Math.sqrt(D); return [Math.cbrt(r + sD) + Math.cbrt(r - sD) - c2 / 3]; }
+    const th = Math.acos(r / Math.sqrt(-q * q * q)), m = 2 * Math.sqrt(-q);
+    return [m * Math.cos(th / 3) - c2 / 3, m * Math.cos((th + 2 * Math.PI) / 3) - c2 / 3, m * Math.cos((th + 4 * Math.PI) / 3) - c2 / 3].sort((a, b) => a - b);
+  }
+  function Zroots(f, T, P) {
+    const A = aT(f, T) * P / (RU * RU * T * T), B = f.b * P / (RU * T);
+    const z = cubicRoots(-(1 - B), A - 3 * B * B - 2 * B, -(A * B - B * B - B * B * B)).filter(x => x > B);
+    return { A, B, zl: z[0], zv: z[z.length - 1] };
+  }
+  function lnphi(Z, A, B) {
+    return Z - 1 - Math.log(Z - B) - A / (2 * SQ2 * B) * Math.log((Z + (1 + SQ2) * B) / (Z + (1 - SQ2) * B));
+  }
+  // ideal gas parts (per kg)
+  function hig(f, T) { const n = CP0_EXP, c = f.cp20 / Math.pow(293.15, n); return c * (Math.pow(T, n + 1) - Math.pow(f.Tref, n + 1)) / (n + 1); }
+  function sig(f, T, P) { const n = CP0_EXP, c = f.cp20 / Math.pow(293.15, n); return c * (Math.pow(T, n) - Math.pow(f.Tref, n)) / n - f.R * Math.log(P / 1e5); }
+  function props(f, T, P, phase) { // phase 'l' or 'v'
+    const { A, B, zl, zv } = Zroots(f, T, P);
+    const Z = phase === 'l' ? zl : zv;
+    const a = aT(f, T), da = daT(f, T);
+    const L = Math.log((Z + (1 + SQ2) * B) / (Z + (1 - SQ2) * B));
+    const hdep = (RU * T * (Z - 1) + (T * da - a) / (2 * SQ2 * f.b) * L) / f.M; // J/mol / g/mol = kJ/kg
+    const sdep = (RU * Math.log(Z - B) + da / (2 * SQ2 * f.b) * L) / f.M;
+    const v = Z * RU * T / P / f.M; // m3/mol / g/mol -> m3/g; *1000 = m3/kg
+    return { h: hig(f, T) + hdep + 200, s: sig(f, T, P) + sdep + 1, v: v * 1000, Z };
+  }
+  const satCache = new Map();
+  function psat(f, T) { // Pa
+    const key = f.name + T.toFixed(4);
+    if (satCache.has(key)) return satCache.get(key);
+    let P = f.Pc * Math.exp(5.373 * (1 + f.w) * (1 - f.Tc / T));
+    for (let i = 0; i < 300; i++) {
+      const { A, B, zl, zv } = Zroots(f, T, P);
+      if (Math.abs(zl - zv) < 1e-9) { P *= (T / f.Tc > 0.99 ? 0.999 : 0.98); continue; }
+      const d = lnphi(zl, A, B) - lnphi(zv, A, B);
+      P *= Math.exp(d);
+      if (Math.abs(d) < 1e-11) break;
+    }
+    satCache.set(key, P); return P;
+  }
+  function Tsat(f, Pbar) { // degC
+    const P = Pbar * 1e5;
+    if (P >= f.Pc) return NaN;
+    let lo = 150, hi = f.Tc - 1e-4;
+    for (let i = 0; i < 60; i++) { const m = 0.5 * (lo + hi); if (psat(f, m) > P) hi = m; else lo = m; }
+    return 0.5 * (lo + hi) - TK;
+  }
+  function satL(f, T) { return props(f, T, psat(f, T), 'l'); }
+  function satV(f, T) { return props(f, T, psat(f, T), 'v'); }
+
+  // ---------- Heat transfer fluids: cp tables (kJ/kgK) vs degC ----------
+  const HTF = {
+    water: { label: 'Thermal water (10 bar)', T: [0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260], cp: [4.217, 4.182, 4.179, 4.185, 4.197, 4.216, 4.245, 4.285, 4.339, 4.408, 4.497, 4.61, 4.77, 4.98] },
+    air: { label: 'Hot air (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.004, 1.006, 1.009, 1.015, 1.023, 1.033, 1.044] },
+    vp1: { label: 'Therminol VP-1 (1 bar)', T: [0, 50, 100, 150, 200, 250, 300], cp: [1.52, 1.68, 1.84, 1.99, 2.14, 2.28, 2.42] },
+  };
+  for (const k in HTF) { // build fine h, s tables 0..260 C at 0.1 K
+    const t = HTF[k], N = 2601; t.tt = new Float64Array(N); t.hh = new Float64Array(N); t.ss = new Float64Array(N);
+    const cpAt = x => interp(t.T, t.cp, x);
+    for (let i = 0; i < N; i++) {
+      const T = i * 0.1; t.tt[i] = T;
+      if (i === 0) { t.hh[i] = 0; t.ss[i] = 0; continue; }
+      const c = 0.5 * (cpAt(T) + cpAt(T - 0.1));
+      t.hh[i] = t.hh[i - 1] + c * 0.1; t.ss[i] = t.ss[i - 1] + c * Math.log((T + TK) / (T - 0.1 + TK));
+    }
+    t.cpAt = cpAt;
+  }
+  function interp(xs, ys, x) {
+    if (x <= xs[0]) return ys[0] + (ys[1] - ys[0]) * (x - xs[0]) / (xs[1] - xs[0]);
+    const n = xs.length;
+    if (x >= xs[n - 1]) return ys[n - 1] + (ys[n - 1] - ys[n - 2]) * (x - xs[n - 1]) / (xs[n - 1] - xs[n - 2]);
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (xs[m] > x) hi = m; else lo = m; }
+    return ys[lo] + (ys[hi] - ys[lo]) * (x - xs[lo]) / (xs[hi] - xs[lo]);
+  }
+  const hsH = (k, T) => interp(HTF[k].tt, HTF[k].hh, T);
+  const hsS = (k, T) => interp(HTF[k].tt, HTF[k].ss, T);
+  const hsT = (k, h) => interp(HTF[k].hh, HTF[k].tt, h);
+
+  // ---------- Simple ORC ----------
+  const DEF = { Tcond: 20, T0: 7, dtpp: 10, etaT: 0.9, etaP: 0.8, mhs: 2, htf: 'water', N: 60 };
+
+  // working-fluid side, independent of heat source
+  const wfCache = new Map();
+  function wfSide(name, pevp, o) {
+    o = Object.assign({}, DEF, o);
+    const key = [name, pevp.toFixed(4), o.Tcond, o.etaT, o.etaP, o.N].join('|');
+    if (wfCache.has(key)) return wfCache.get(key);
+    const f = mk(name);
+    const T1 = o.Tcond + TK, P1 = psat(f, T1), P = pevp * 1e5;
+    const tevp = Tsat(f, pevp), T3 = tevp + TK;
+    if (!(tevp > o.Tcond + 1)) return null;
+    const s1p = satL(f, T1); const h1 = s1p.h, s1 = s1p.s, v1 = s1p.v;
+    const h2 = h1 + v1 * (P - P1) / 1000 / o.etaP; // kJ/kg
+    // T2 from h on liquid isobar
+    let lo = T1 - 5, hi = T1 + 10;
+    for (let i = 0; i < 50; i++) { const m = 0.5 * (lo + hi); if (props(f, m, P, 'l').h > h2) hi = m; else lo = m; }
+    const T2 = 0.5 * (lo + hi), s2 = props(f, T2, P, 'l').s;
+    const L3 = satL(f, T3), V4 = satV(f, T3);
+    // preheater curve T-h from T2 to T3
+    const pre = [];
+    for (let i = 0; i <= o.N; i++) { const T = T2 + (T3 - T2) * i / o.N; const pp = i === o.N ? L3 : props(f, T, P, 'l'); pre.push([T - TK, pp.h, pp.s]); }
+    // turbine
+    const Pc = P1, L1 = s1p, V1 = satV(f, T1);
+    let h5is, x5 = 1;
+    if (V4.s >= V1.s) {
+      let a = T1, b = T3 + 60;
+      for (let i = 0; i < 60; i++) { const m = 0.5 * (a + b); if (props(f, m, Pc, 'v').s > V4.s) b = m; else a = m; }
+      h5is = props(f, 0.5 * (a + b), Pc, 'v').h;
+    } else { x5 = (V4.s - L1.s) / (V1.s - L1.s); h5is = L1.h + x5 * (V1.h - L1.h); }
+    const h5 = V4.h - o.etaT * (V4.h - h5is);
+    let T5, s5, x5a = 1;
+    if (h5 >= V1.h) {
+      let a = T1, b = T3 + 60;
+      for (let i = 0; i < 60; i++) { const m = 0.5 * (a + b); if (props(f, m, Pc, 'v').h > h5) b = m; else a = m; }
+      T5 = 0.5 * (a + b); s5 = props(f, T5, Pc, 'v').s;
+    } else { x5a = (h5 - L1.h) / (V1.h - L1.h); T5 = T1; s5 = L1.s + x5a * (V1.s - L1.s); }
+    // mean cp in preheater per Eq. 16 with t_pre,in = t_cond (paper assumption)
+    const hLc = props(f, T1, P, 'l').h;
+    const cpPre = (L3.h - hLc) / (T3 - T1);
+    const r = {
+      fluid: name, pevp, tevp, tcond: o.Tcond, P1bar: P1 / 1e5,
+      st: { 1: { T: o.Tcond, h: h1, s: s1 }, 2: { T: T2 - TK, h: h2, s: s2 }, 3: { T: tevp, h: L3.h, s: L3.s }, 4: { T: tevp, h: V4.h, s: V4.s }, 5: { T: T5 - TK, h: h5, s: s5 } },
+      hevp: V4.h - L3.h, cpPre, pre, wnet: (V4.h - h5) - (h2 - h1), wt: V4.h - h5, wp: h2 - h1, x5is: x5, x5: x5a,
+    };
+    wfCache.set(key, r); return r;
+  }
+
+  function ohst(name, pevp, o) { // Eq. 15
+    o = Object.assign({}, DEF, o);
+    const w = wfSide(name, pevp, o); if (!w) return NaN;
+    return w.hevp / w.cpPre + w.tevp + o.dtpp;
+  }
+  function predictPinch(oh, ths, band = 0.2) { // Eq. 20-22
+    if (Math.abs(oh - ths) < band) return 'pre-parallel';
+    return oh > ths ? 'evap-inlet' : 'pre-inlet';
+  }
+
+  function solveSimple(name, pevp, ths, o) {
+    o = Object.assign({}, DEF, o);
+    const w = wfSide(name, pevp, o);
+    if (!w) return { feasible: false, reason: 'Evaporation pressure is below the condensation pressure.' };
+    const k = o.htf, T0 = o.T0, h0 = hsH(k, T0), s0 = hsS(k, T0);
+    if (ths <= w.tevp + o.dtpp) return { feasible: false, reason: `Heat source (${ths.toFixed(1)} °C) must exceed T_evp + Δt_pp = ${(w.tevp + o.dtpp).toFixed(1)} °C.`, w };
+    const h6 = hsH(k, ths), h2 = w.st[2].h, h4 = w.st[4].h;
+    // wf points ordered from cold end (state 2) to hot end (state 4)
+    const pts = w.pre.map(p => [p[0], p[1]]); pts.push([w.tevp, h4]);
+    const minDT = r => { let m = 1e9, idx = 0; for (let i = 0; i < pts.length; i++) { const Tw = hsT(k, h6 - r * (h4 - pts[i][1])); const d = Tw - pts[i][0]; if (d < m) { m = d; idx = i; } } return [m, idx]; };
+    let lo = 0, hi = (h6 - hsH(k, w.st[2].T)) / (h4 - h2);
+    for (let i = 0; i < 60; i++) { const m = 0.5 * (lo + hi); if (minDT(m)[0] > o.dtpp) lo = m; else hi = m; }
+    const r = lo;
+    const dtCold = hsT(k, h6 - r * (h4 - h2)) - w.st[2].T, dtEvIn = hsT(k, h6 - r * (h4 - w.st[3].h)) - w.tevp;
+    const [, pIdx] = minDT(r);
+    const nPre = pts.length - 2; // index of state 3 (evaporator inlet)
+    let pinchAt;
+    if (Math.abs(dtCold - dtEvIn) < 0.3) pinchAt = 'pre-parallel';
+    else if (pIdx >= nPre) pinchAt = 'evap-inlet';
+    else if (pIdx === 0) pinchAt = 'pre-inlet';
+    else pinchAt = 'pre-interior';
+    const pinchPt = pts[Math.min(pIdx, nPre)];
+    const h7 = h6 - r * (h4 - w.st[3].h), h8 = h6 - r * (h4 - h2);
+    const T7 = hsT(k, h7), T8 = hsT(k, h8);
+    const Qhe = r * (h4 - h2);
+    const etaTh = w.wnet / (h4 - h2), etaHE = Qhe / (h6 - h0), etaSys = r * w.wnet / (h6 - h0);
+    const ex = (h, s) => h - h0 - (T0 + TK) * (s - s0);
+    const e6 = ex(h6, hsS(k, ths)), e8 = ex(h8, hsS(k, T8));
+    const ewf = (h4 - h2) - (T0 + TK) * (w.st[4].s - w.st[2].s);
+    const exIn = r * ewf;
+    const etaExHE = exIn / e6;
+    // T-Q profile (Q normalised to heat available down to T0)
+    const Qmax = h6 - h0;
+    const q8 = h8 - h0;
+    const TQwf = pts.map(p => [100 * (q8 + r * (p[1] - h2)) / Qmax, p[0]]);
+    TQwf.splice(TQwf.length - 1, 0, [100 * (q8 + r * (w.st[3].h - h2)) / Qmax, w.tevp]);
+    const TQhs = []; for (let i = 0; i <= 40; i++) { const T = T0 + (ths - T0) * i / 40; TQhs.push([100 * (hsH(k, T) - h0) / Qmax, T]); }
+    return {
+      feasible: true, w, ths, r, mwf: r * o.mhs, pinchAt, pinchT: pinchPt[0], pinchQ: 100 * ((h8 - h0) + r * (pinchPt[1] - h2)) / (h6 - h0), dtCold, dtEvIn, T7, T8, h6, h7, h8,
+      etaTh, etaHE, etaSys, etaExHE, P: r * o.mhs * w.wnet, Qhe: Qhe * o.mhs,
+      ex: { in: e6 * o.mhs, wf: exIn * o.mhs, loss: e8 * o.mhs, destr: (e6 - e8 - exIn) * o.mhs },
+      TQ: { wf: TQwf, hs: TQhs, Q8: 100 * (h8 - h0) / Qmax, Q7: 100 * (h7 - h0) / Qmax },
+      ohst: w.hevp / w.cpPre + w.tevp + o.dtpp,
+    };
+  }
+
+  // ---------- optimisation ----------
+  function golden(fn, a, b, tol = 1e-3, maxIt = 60) { // maximise
+    const a0 = a, b0 = b;
+    const g = (Math.sqrt(5) - 1) / 2;
+    let c = b - g * (b - a), d = a + g * (b - a), fc = fn(c), fd = fn(d);
+    for (let i = 0; i < maxIt && Math.abs(b - a) > tol; i++) {
+      if (fc > fd) { b = d; d = c; fd = fc; c = b - g * (b - a); fc = fn(c); }
+      else { a = c; c = d; fc = fd; d = a + g * (b - a); fd = fn(d); }
+    }
+    const x = 0.5 * (a + b), fx = fn(x);
+    const fa = fn(a0), fb = fn(b0);
+    if (fb >= fx && fb >= fa) return { x: b0, fx: fb };
+    if (fa > fx) return { x: a0, fx: fa };
+    return { x, fx };
+  }
+  function pRange(name, ths, o) {
+    o = Object.assign({}, DEF, o);
+    const f = mk(name);
+    const plo = Math.max(psat(f, o.Tcond + 15 + TK) / 1e5, 0.5);
+    let phi = Math.min(f.pmax, 0.985 * f.pc);
+    if (ths != null) { const Tlim = ths - o.dtpp - 0.3; if (Tlim + TK < f.Tc) phi = Math.min(phi, psat(f, Tlim + TK) / 1e5); }
+    return [plo, phi];
+  }
+  function optimizeSimple(name, ths, o) {
+    const [a, b] = pRange(name, ths, o);
+    if (!(b > a)) return null;
+    const fn = p => { const s = solveSimple(name, p, ths, o); return s.feasible ? s.etaSys : -1; };
+    const g = golden(fn, a, b, 1e-3);
+    return { pOEP: g.x, sol: solveSimple(name, g.x, ths, o), atBound: Math.abs(g.x - b) < 0.02 };
+  }
+  function ohstFromSim(name, pevp, o) { // argmax of exergetic efficiency in HE over ths
+    o = Object.assign({}, DEF, o);
+    const w = wfSide(name, pevp, o); if (!w) return NaN;
+    const fn = t => { const s = solveSimple(name, pevp, t, o); return s.feasible ? s.etaExHE : -1; };
+    return golden(fn, w.tevp + o.dtpp + 0.5, Math.min(w.tevp + o.dtpp + 160, 255), 0.02).x;
+  }
+
+  // ---------- Dual-fluid ORC (Fig. 13): HT evaporator first, split to LT ORC and HT preheater ----------
+  function solveDual(ht, lt, pHT, pLT, ths, o) {
+    o = Object.assign({}, DEF, o);
+    const k = o.htf, T0 = o.T0, h0 = hsH(k, T0), s0 = hsS(k, T0), TK0 = T0 + TK;
+    const wH = wfSide(ht, pHT, o); if (!wH) return { feasible: false, reason: 'HT pressure too low' };
+    const T2 = wH.tevp + o.dtpp; // water after HT evaporator (pinch at HT evaporator inlet)
+    if (ths <= T2) return { feasible: false, reason: 'HT evaporation temperature too high for the heat source' };
+    const h1 = hsH(k, ths), h2 = hsH(k, T2);
+    const mHT = o.mhs * (h1 - h2) / wH.hevp; // Eq. 11 analogue
+    // HT preheater duty and feasibility as function of water fraction y = m6/mhs
+    const QpreHT = mHT * (wH.st[3].h - wH.st[2].h);
+    const preOK = y => { // check pinch in HT preheater with water y*mhs from T2 downward
+      const m = y * o.mhs; let mn = 1e9;
+      for (const p of wH.pre) { const Tw = hsT(k, h2 - mHT * (wH.st[3].h - p[1]) / m); mn = Math.min(mn, Tw - p[0]); }
+      return mn;
+    };
+    let lo = 1e-4, hi = 1; // find minimal y with pinch >= dtpp
+    if (preOK(1) < o.dtpp) return { feasible: false, reason: 'HT preheater cannot be fed even with all the water' };
+    for (let i = 0; i < 60; i++) { const m = 0.5 * (lo + hi); if (preOK(m) >= o.dtpp) hi = m; else lo = m; }
+    const yMin = hi;
+    const y = o.split != null ? Math.max(o.split, yMin) : yMin; // fraction to HT preheater
+    const x = 1 - y; // fraction to LT ORC
+    const h7 = h2 - mHT * (wH.st[3].h - wH.st[2].h) / (y * o.mhs), T7 = hsT(k, h7);
+    const L = solveSimple(lt, pLT, T2, Object.assign({}, o, { mhs: x * o.mhs }));
+    if (!L.feasible) return { feasible: false, reason: 'LT ORC: ' + L.reason };
+    const PHT = mHT * wH.wnet, PLT = L.P;
+    const h5 = L.h8, h8 = (x * h5 + y * h7);
+    const T8 = hsT(k, h8);
+    const ex = (h, T) => h - h0 - TK0 * (hsS(k, T) - s0);
+    const exw = wf => (wf.st[4].h - wf.st[2].h) - TK0 * (wf.st[4].s - wf.st[2].s);
+    const e1 = ex(h1, ths);
+    const etaSys = (PHT + PLT) / (o.mhs * (h1 - h0));
+    const etaExHE = (mHT * exw(wH) + L.mwf * exw(L.w)) / (o.mhs * e1);
+    // Per-loop T-Q profiles in kW, measured from each loop's cold end.
+    // HT loop: water branch y through the HT preheater (T7 -> T2), then the full stream through the HT evaporator (T2 -> T1).
+    const QpreH = mHT * (wH.st[3].h - wH.st[2].h), QevH = mHT * wH.hevp;
+    const htWf = wH.pre.map(p => [mHT * (p[1] - wH.st[2].h), p[0]]).concat([[QpreH + QevH, wH.tevp]]);
+    const htHs = [];
+    for (let i = 0; i <= 20; i++) { const h = h7 + (h2 - h7) * i / 20; htHs.push([y * o.mhs * (h - h7), hsT(k, h)]); }
+    for (let i = 1; i <= 10; i++) { const h = h2 + (h1 - h2) * i / 10; htHs.push([QpreH + o.mhs * (h - h2), hsT(k, h)]); }
+    // LT loop: branch x from T2 down to the LT outlet
+    const Qb = x * o.mhs * (L.h6 - h0);
+    const ltWf = L.TQ.wf.map(p => [p[0] / 100 * Qb, p[1]]);
+    const ltHs = L.TQ.hs.map(p => [p[0] / 100 * Qb, p[1]]);
+    const Q0 = x * o.mhs * (L.h8 - h0); // heat the LT branch leaves in the water
+    return {
+      feasible: true, ht, lt, pHT, pLT, ths, T2, T7, T8, y, x, yMin, mHT, mLT: L.mwf, PHT, PLT, etaSys, etaExHE,
+      wH, L, TQ: { ht: { wf: htWf, hs: htHs }, lt: { wf: ltWf, hs: ltHs, Q0 } },
+    };
+  }
+  function optimizeDual(ht, lt, ths, o) {
+    o = Object.assign({}, DEF, o);
+    const [la, lb] = pRange(lt, null, o);
+    // Step 0: LT at its maximum allowable pressure (fluid-II behaviour), Step 1: pick pHT so that T2 = OHST_LT
+    const pLT = lb;
+    const target = ohst(lt, pLT, o);
+    const f = mk(ht);
+    const TevpHT = target - o.dtpp;
+    const pHT0 = psat(f, TevpHT + TK) / 1e5;
+    // Step 2: refine pHT by maximising efficiency around that point
+    const fn = p => { const s = solveDual(ht, lt, p, pLT, ths, o); return s.feasible ? s.etaSys : -1; };
+    const [ha, hb] = pRange(ht, ths, o);
+    const g = golden(fn, Math.max(ha, pHT0 * 0.7), Math.min(hb, pHT0 * 1.3), 1e-3);
+    return { pHT0, pHT: g.x, pLT, ohstLT: target, sol: solveDual(ht, lt, g.x, pLT, ths, o) };
+  }
+
+  // saturation dome for T-s plots
+  function dome(name, n = 60) {
+    const f = mk(name), lo = -30 + TK, hi = f.Tc - 0.3;
+    const L = [], V = [];
+    for (let i = 0; i <= n; i++) { const T = lo + (hi - lo) * Math.pow(i / n, 0.7); const l = satL(f, T), v = satV(f, T); L.push([l.s, T - TK]); V.push([v.s, T - TK]); }
+    return { L, V: V.reverse() };
+  }
+  // liquid cp on an isobar (Fig. 5)
+  function cpLiquid(name, pbar, T) { const f = mk(name), P = pbar * 1e5, TT = T + TK; return (props(f, TT + 0.05, P, 'l').h - props(f, TT - 0.05, P, 'l').h) / 0.1; }
+  // isobar path for T-s (liquid from T to Tsat)
+  function isobarL(name, pbar, Ta, Tb, n = 20) { const f = mk(name), P = pbar * 1e5; const o = []; for (let i = 0; i <= n; i++) { const T = Ta + (Tb - Ta) * i / n; o.push([props(f, T + TK, P, 'l').s, T]); } return o; }
+  function isobarV(name, pbar, Ta, Tb, n = 20) { const f = mk(name), P = pbar * 1e5; const o = []; for (let i = 0; i <= n; i++) { const T = Ta + (Tb - Ta) * i / n; o.push([props(f, T + TK, P, 'v').s, T]); } return o; }
+
+  const api = { FLUIDS, HTF, DEF, mk, psat: (n, T) => psat(mk(n), T + TK) / 1e5, Tsat: (n, p) => Tsat(mk(n), p), wfSide, ohst, predictPinch, solveSimple, optimizeSimple, ohstFromSim, solveDual, optimizeDual, golden, pRange, dome, cpLiquid, isobarL, isobarV, hsH, hsS, hsT };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ORC = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function(){
+const O = window.ORC;
+const $ = id => document.getElementById(id);
+const fluids = Object.keys(O.FLUIDS);
+const PAPER = { fluid: 'R227ea', p: 28, ths: 140, dtpp: 10, etaT: 0.9, htf: 'water' };
+const S = Object.assign({}, PAPER);
+const opts = () => ({ dtpp: S.dtpp, etaT: S.etaT, htf: S.htf });
+const POPTS = { dtpp: 10, etaT: 0.9, htf: 'water' };
+const f1 = (x, d = 1) => (x == null || !isFinite(x)) ? '–' : x.toFixed(d);
+const pct = (x, d = 2) => (x == null || !isFinite(x)) ? '–' : (100 * x).toFixed(d) + ' %';
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hasPlotly = typeof Plotly !== 'undefined';
+const tex = (s, el) => { if (window.katex) katex.render(s, el, { output: 'mathml', throwOnError: false, displayMode: false }); else el.textContent = s.replace(/\\[a-z]+|[{}]/gi, ' '); };
+// one notation system: HTML subscripts everywhere (Plotly renders <sub>)
+const SYM = { sys: 'η<sub>sys</sub>', exHE: 'η<sub>ex,HE</sub>', ths: 't<sub>hs</sub>', dtpp: 'Δt<sub>pp</sub>', pevp: 'p<sub>evp</sub>' };
+const PL = { 'evap-inlet': 'evaporator inlet', 'pre-inlet': 'preheater inlet', 'pre-interior': 'inside the preheater', 'pre-parallel': 'spread over the preheater' };
+const PEQ = { 'evap-inlet': 'Eq. 20', 'pre-inlet': 'Eq. 22', 'pre-interior': 'Eq. 22', 'pre-parallel': 'Eq. 21' };
+
+// ---------- plotting ----------
+function base(extra) {
+  const ink = css('--ink-2');
+  const ax = { gridcolor: css('--rule'), zerolinecolor: css('--rule-2'), linecolor: css('--ink'), showline: true, mirror: true, ticks: 'inside', ticklen: 4, tickcolor: css('--ink-3'),
+    tickfont: { family: 'IBM Plex Mono, monospace', size: 11, color: css('--ink-3') }, titlefont: { size: 12, color: ink }, automargin: true };
+  const l = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { family: 'IBM Plex Sans, system-ui, sans-serif', color: ink, size: 12 },
+    margin: { l: 58, r: 14, t: 12, b: 48 }, xaxis: Object.assign({}, ax), yaxis: Object.assign({}, ax),
+    legend: { orientation: 'h', y: 1.02, yanchor: 'bottom', x: 0, font: { size: 11 } }, hovermode: 'closest',
+    hoverlabel: { bgcolor: css('--panel'), bordercolor: css('--rule-2'), font: { family: 'IBM Plex Mono, monospace', size: 11, color: css('--ink') } } };
+  if (extra) { for (const k in extra) { if (k === 'xaxis' || k === 'yaxis') l[k] = Object.assign({}, l[k], extra[k]); else l[k] = extra[k]; } }
+  return l;
+}
+const CFG = { displayModeBar: false, responsive: true };
+function draw(id, traces, extra, alt) {
+  const el = $(id);
+  if (alt) el.setAttribute('aria-label', alt.replace(/<[^>]+>/g, ''));
+  if (!hasPlotly) { el.innerHTML = '<p class="state-msg">Charts need plotly.js from cdn.jsdelivr.net, which did not load. Check your connection and reload.</p>'; return; }
+  Plotly.react(id, traces, base(extra), CFG);
+}
+function empty(id, msg) { draw(id, [], { xaxis: { visible: false }, yaxis: { visible: false }, annotations: [{ text: msg, showarrow: false, xref: 'paper', yref: 'paper', x: 0.5, y: 0.5, font: { size: 13, color: css('--ink-2') } }] }, msg); }
+const line = (pts, name, color, o = {}) => Object.assign({ x: pts.map(p => p[0]), y: pts.map(p => p[1]), type: 'scatter', mode: 'lines', name, line: { color, width: 2 } }, o);
+const vline = (x, color, dash, y0 = 0, y1 = 1) => ({ type: 'line', xref: 'x', yref: 'paper', x0: x, x1: x, y0, y1, line: { color, width: 1.5, dash } });
+
+// ---------- nomenclature ----------
+const NOMEN = [['c<sub>p</sub>', 'specific heat capacity, kJ/(kg·K)'], ['e', 'specific exergy, kJ/kg'], ['h', 'specific enthalpy, kJ/kg'], ['ṁ', 'mass flow rate, kg/s'], ['p', 'pressure, bar'], ['P', 'power, kW'], ['Q̇', 'heat flow, kW'], ['s', 'specific entropy, kJ/(kg·K)'], ['t', 'temperature, °C'], ['T', 'temperature, K'],
+  ['η<sub>sys</sub>', 'global system efficiency'], ['η<sub>th</sub>', 'thermal efficiency of the cycle'], ['η<sub>HE</sub>', 'heat-exchanger efficiency'], ['η<sub>ex,HE</sub>', 'exergetic efficiency of the heat exchanger'], ['η<sub>is,t</sub>, η<sub>is,p</sub>', 'isentropic turbine / pump efficiency'],
+  ['Δt<sub>pp</sub>', 'pinch-point temperature difference'], ['OHST', 'Optimal Heat Source Temperature'], ['OEP', 'Optimal Evaporation Pressure'], ['HTF', 'heat transfer fluid'], ['p<sub>c</sub>, t<sub>c</sub>', 'critical pressure / temperature'], ['hs, wf', 'heat source, working fluid'], ['evp, cond, pre', 'evaporation, condensation, preheater'], ['0', 'ambient (dead) state, 7 °C'], ['1–8', 'state points, Fig. 1a']];
+$('nomen').innerHTML = NOMEN.map(n => `<div><b>${n[0]}</b><span>${n[1]}</span></div>`).join('');
+
+// ---------- controls ----------
+function fillSel(sel, list, val) { sel.innerHTML = list.map(n => `<option${n === val ? ' selected' : ''}>${n}</option>`).join(''); }
+fillSel($('fluid'), fluids, S.fluid); fillSel($('f5fluid'), fluids, 'R245fa'); fillSel($('f10a'), fluids, 'R245fa'); fillSel($('f10b'), fluids, 'R227ea');
+function setPRange() {
+  const [a, b] = O.pRange(S.fluid, null, opts());
+  for (const id of ['pevp', 'pevpN']) { $(id).min = a.toFixed(2); $(id).max = b.toFixed(2); }
+  S.p = Math.min(Math.max(S.p, a), b);
+}
+function writeCtl() {
+  $('fluid').value = S.fluid; $('pevp').value = S.p; $('pevpN').value = S.p.toFixed(2); $('ths').value = S.ths; $('thsN').value = S.ths;
+  $('dtpp').value = S.dtpp; $('etaT').value = S.etaT; $('htf').value = S.htf;
+  $('dtppO').textContent = f1(S.dtpp, 1) + ' K'; $('etaTO').textContent = S.etaT.toFixed(2);
+  const f = O.FLUIDS[S.fluid];
+  const feas = O.pRange(S.fluid, S.ths, opts())[1];
+  $('pevpH').textContent = `${f1(S.p / f.pc, 2)} p_c · feasible ≤ ${f1(feas, 1)} bar at this t_hs`;
+  const w = O.wfSide(S.fluid, S.p, opts());
+  $('thsH').textContent = w ? `needs > ${f1(w.tevp + S.dtpp)} °C (t_evp + Δt_pp)` : '';
+  $('papertag').hidden = !isPaper();
+}
+const isPaper = () => S.fluid === PAPER.fluid && Math.abs(S.p - PAPER.p) < 0.03 && S.ths === PAPER.ths && S.dtpp === PAPER.dtpp && S.etaT === PAPER.etaT && S.htf === PAPER.htf;
+setPRange(); writeCtl();
+let raf = 0; const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(updateAll); };
+let slowT = 0, slowKey = '';
+const scheduleSlow = () => { document.querySelectorAll('.slow').forEach(e => e.classList.add('stale')); clearTimeout(slowT); slowT = setTimeout(updateSlow, 350); };
+function onInput(src) {
+  S.fluid = $('fluid').value; S.htf = $('htf').value; S.dtpp = +$('dtpp').value; S.etaT = +$('etaT').value;
+  S.p = +(src === 'pevpN' ? $('pevpN').value : $('pevp').value) || S.p;
+  S.ths = +(src === 'thsN' ? $('thsN').value : $('ths').value) || S.ths;
+  S.ths = Math.min(220, Math.max(80, S.ths));
+  if (src === 'fluid') setPRange(); else { const [a, b] = O.pRange(S.fluid, null, opts()); S.p = Math.min(Math.max(S.p, a), b); }
+  writeCtl(); schedule();
+  if (src !== 'fluid' && src !== 'pevp' && src !== 'pevpN') scheduleSlow();
+}
+['fluid', 'htf', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener(id === 'fluid' || id === 'htf' ? 'change' : 'input', () => onInput(id)));
+['fluid', 'htf', 'pevp', 'pevpN', 'ths', 'thsN', 'dtpp', 'etaT'].forEach(id => $(id).addEventListener('change', () => announce()));
+$('reset').addEventListener('click', () => { Object.assign(S, PAPER); setPRange(); writeCtl(); schedule(); scheduleSlow(); announce(); });
+$('optoggle').addEventListener('click', e => { const o = $('opbar').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', o); measureBar(); });
+function measureBar() { document.documentElement.style.setProperty('--barH', $('opbar').offsetHeight + 'px'); }
+if (window.ResizeObserver) new ResizeObserver(measureBar).observe($('opbar')); measureBar();
+let annT = 0;
+function announce() { clearTimeout(annT); annT = setTimeout(() => { if (!SOL) return; $('announce').textContent = SOL.feasible ? `${S.fluid} at ${f1(S.p, 1)} bar, heat source ${f1(S.ths)} degrees: OHST ${f1(SOL.ohst)} degrees, pinch at ${PL[SOL.pinchAt]}, system efficiency ${pct(SOL.etaSys)}.` : `Infeasible: ${SOL.reason}`; }, 600); }
+
+let SOL = null;
+
+// ---------- hero ----------
+function drawHero(sol) {
+  sol = sol || SOL;
+  const svg = $('nl'), x0 = 30, x1 = 490;
+  const w = sol.w;
+  if (!w) { svg.innerHTML = ''; $('verdict').textContent = sol.reason || ''; return; }
+  const floor = w.tevp + S.dtpp, oh = sol.ohst, th = sol.ths != null ? sol.ths : S.ths;
+  const lo = Math.floor((Math.min(floor, th, oh) - 8) / 10) * 10, hi = Math.ceil((Math.max(th, oh) + 12) / 10) * 10;
+  const X = t => x0 + (x1 - x0) * (t - lo) / (hi - lo);
+  let h = `<rect class="zoneA" x="${X(floor)}" y="44" width="${Math.max(0, X(oh) - X(floor))}" height="22"/><rect class="zoneB" x="${X(oh)}" y="44" width="${Math.max(0, x1 - X(oh))}" height="22"/>`;
+  h += `<rect x="${x0}" y="44" width="${Math.max(0, X(floor) - x0)}" height="22" fill="var(--rule)" opacity="0.6"/>`;
+  h += `<line class="axis" x1="${x0}" x2="${x1}" y1="66" y2="66"/>`;
+  for (let t = lo; t <= hi; t += 10) h += `<line class="tick" x1="${X(t)}" x2="${X(t)}" y1="66" y2="72"/><text x="${X(t)}" y="86" text-anchor="middle">${t}</text>`;
+  h += `<text class="zl" x="${(X(floor) + X(oh)) / 2}" y="59" text-anchor="middle">${X(oh) - X(floor) > 90 ? 'pinch: evaporator inlet' : ''}</text><text class="zl" x="${(X(oh) + x1) / 2}" y="59" text-anchor="middle">${x1 - X(oh) > 90 ? 'pinch: preheater side' : ''}</text>`;
+  h += `<line x1="${X(oh)}" x2="${X(oh)}" y1="36" y2="72" stroke="var(--ink)" stroke-width="2"/><text x="${X(oh)}" y="28" text-anchor="middle" style="fill:var(--ink)">OHST ${f1(oh)}</text>`;
+  h += `<path d="M${X(th)} 66 l-7 14 h14 z" fill="var(--op)"/><text x="${X(th)}" y="108" text-anchor="middle" style="fill:var(--op);font-weight:600">t_hs ${f1(th)}</text>`;
+  if (X(oh) - X(floor) >= 70) h += `<text x="${X(floor)}" y="28" text-anchor="middle" style="fill:var(--ink-3)">min ${f1(floor)}</text>`;
+  h += `<text x="${x1}" y="108" text-anchor="end" style="fill:var(--ink-3)">°C</text>`;
+  svg.innerHTML = h;
+  svg.setAttribute('aria-label', `Number line: minimum feasible ${f1(floor)} °C, OHST ${f1(oh)} °C, heat source ${f1(th)} °C.`);
+  if (!sol.feasible) { $('verdict').innerHTML = `<b>Infeasible.</b> ${sol.reason} Raise t<sub>hs</sub> or lower p<sub>evp</sub>.`; return; }
+  const d = th - oh, pred = O.predictPinch(oh, th);
+  const agree = (pred === 'evap-inlet') === (sol.pinchAt === 'evap-inlet');
+  $('verdict').innerHTML = `t<sub>hs</sub> is <b class="num">${f1(Math.abs(d))} K ${d >= 0 ? 'above' : 'below'}</b> the OHST of ${S.fluid} at ${f1(S.p, 1)} bar. ` +
+    (d < 0 ? `The pinch sits at the <b>evaporator inlet</b> (Eq. 20), so η<sub>sys</sub> is limited by evaporation and a lower pressure may do better.` : `The pinch moves to the <b>preheater side</b> (Eq. 22), so raising the evaporation pressure keeps paying.`) +
+    (agree ? '' : ` The full pinch search disagrees here (pinch ${PL[sol.pinchAt]}), because the fluid's c<sub>p</sub> varies along the preheater.`);
+}
+function drawFig4(sol) {
+  sol = sol || SOL;
+  if (!sol.feasible) { empty('fig4', sol.reason || 'Infeasible'); $('fig4cap').textContent = ''; return; }
+  draw('fig4', tqTraces(sol, S.fluid).concat([pinchMarker(sol)]), { xaxis: { title: 'Heat flow [% of source heat down to t<sub>0</sub>]', range: [0, 100] }, yaxis: { title: 'Temperature [°C]', range: [0, Math.max(S.ths, sol.ths) + 15] }, shapes: [vline(sol.TQ.Q8, css('--ink-3'), 'dot')] },
+    `T–Q diagram: heat source from ${f1(sol.ths)} to ${f1(sol.T8)} °C, pinch ${PL[sol.pinchAt]} at ${f1(sol.pinchT)} °C.`);
+  $('fig4cap').innerHTML = `Pinch found ${PL[sol.pinchAt]} at <b class="num">${f1(sol.pinchT)} °C</b>. Δt is ${f1(sol.dtCold)} K at the preheater inlet and ${f1(sol.dtEvIn)} K at the evaporator inlet. The water leaves at ${f1(sol.T8)} °C (dotted line).`;
+}
+let sweepOn = false, sweepT = 0, sweepIdx = 0;
+function sweepFrame(t) { const s = O.solveSimple(S.fluid, S.p, t, opts()); drawFig4(s); drawHero(s); $('sweepNote').textContent = `t_hs = ${f1(t)} °C`; }
+function stopSweep() { sweepOn = false; sweepIdx = 0; const b = $('sweepBtn'); b.setAttribute('aria-pressed', 'false'); b.innerHTML = 'Sweep t<sub>hs</sub> across the OHST'; $('sweepNote').textContent = ''; drawFig4(); drawHero(); }
+$('sweepBtn').addEventListener('click', e => {
+  const w = SOL.w; if (!w) { $('sweepNote').textContent = 'Pick a feasible pressure first.'; return; }
+  const lo = w.tevp + S.dtpp + 1, hi = SOL.ohst + 35;
+  if (reduce) { // step-by-step instead of motion
+    const steps = 8; sweepIdx = (sweepIdx + 1) % (steps + 1);
+    if (sweepIdx) { e.currentTarget.textContent = `Next step (${sweepIdx}/${steps})`; sweepFrame(lo + (hi - lo) * sweepIdx / steps); } else stopSweep();
+    return;
+  }
+  if (sweepOn) { stopSweep(); return; }
+  sweepOn = true; sweepT = 0; e.currentTarget.setAttribute('aria-pressed', 'true'); e.currentTarget.textContent = 'Stop sweep';
+  const step = () => { if (!sweepOn) return; sweepT = (sweepT + 0.01) % 1; sweepFrame(lo + (hi - lo) * (0.5 - 0.5 * Math.cos(2 * Math.PI * sweepT))); setTimeout(() => requestAnimationFrame(step), 60); };
+  step();
+});
+
+// ---------- §2 schematic ----------
+const SCH = {
+  comps: [
+    { id: 'evap', label: 'Evaporator', x: 110, y: 40, w: 120, h: 56, seg: [3, 4] },
+    { id: 'pre', label: 'Preheater', x: 110, y: 168, w: 120, h: 56, seg: [2, 3] },
+    { id: 'turb', label: 'Turbine', x: 320, y: 30, w: 80, h: 84, seg: [4, 5], shape: 'turb' },
+    { id: 'cond', label: 'Condenser', x: 330, y: 200, w: 110, h: 56, seg: [5, 1] },
+    { id: 'pump', label: 'Pump', x: 230, y: 300, r: 20, seg: [1, 2], shape: 'circle' },
+  ],
+  states: { 1: [330, 300], 2: [170, 268], 3: [170, 132], 4: [270, 40], 5: [380, 160], 6: [40, 54], 7: [40, 132], 8: [40, 210], 9: [490, 242], 10: [490, 214] },
+  valPos: { 9: [452, 262] },
+};
+let schemSel = null;
+function buildSchem() {
+  const s = $('schem');
+  const P = (d, c, cls = 'pipe') => `<path class="${cls}" d="${d}" stroke="var(${c})"/>`;
+  const wfPaths = ['M170 96 V40 H320', 'M400 72 H420 V125 H385 V200', 'M385 256 V300 H250', 'M210 300 H170 V224', 'M170 168 V96'];
+  const hsPaths = ['M20 54 H110', 'M110 82 H70 V196 H110', 'M110 210 H20'];
+  const cwPaths = ['M510 242 H440', 'M440 214 H510'];
+  let h = '';
+  wfPaths.forEach(d => h += P(d, '--wf') + P(d, '--panel', 'flow'));
+  hsPaths.forEach(d => h += P(d, '--hs') + P(d, '--panel', 'flow'));
+  cwPaths.forEach(d => h += P(d, '--cw') + P(d, '--panel', 'flow'));
+  for (const c of SCH.comps) {
+    let g = `<g class="comp" data-c="${c.id}" tabindex="0" role="button" aria-pressed="false" aria-label="${c.label}: highlight process ${c.seg.join(' to ')}">`;
+    if (c.shape === 'turb') g += `<path class="box" d="M${c.x} ${c.y + 22} L${c.x + c.w} ${c.y} V${c.y + c.h} L${c.x} ${c.y + c.h - 22} Z"/><text class="lbl" x="${c.x + 12}" y="${c.y + c.h / 2 + 4}">${c.label}</text>`;
+    else if (c.shape === 'circle') g += `<circle class="box" cx="${c.x}" cy="${c.y}" r="${c.r}"/><path d="M${c.x - 8} ${c.y + 8} L${c.x + 10} ${c.y} L${c.x - 8} ${c.y - 8}" fill="none" stroke="var(--ink)" stroke-width="1.4"/><text class="lbl" x="${c.x - 15}" y="${c.y + 36}">${c.label}</text>`;
+    else { // heat exchanger: frame with a coil through it
+      let coil = `M${c.x + 8} ${c.y + c.h / 2}`; for (let i = 0; i < 6; i++) coil += ` l8 ${i % 2 ? 14 : -14}`;
+      g += `<rect class="box" x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}"/><path class="coil" d="${coil}"/><text class="lbl" x="${c.x + 62}" y="${c.y + c.h / 2 + 4}">${c.label}</text>`;
+    }
+    g += '</g>'; h += g;
+  }
+  h += `<circle cx="470" cy="72" r="16" class="box"/><text class="lbl" x="465" y="76">G</text><path d="M400 72 H454" stroke="var(--ink)" stroke-width="2"/>`;
+  for (const [k, [x, y]] of Object.entries(SCH.states)) { const vp = SCH.valPos[k] || [x + 12, y - 10]; h += `<g><circle class="st" cx="${x}" cy="${y}" r="9"/><text class="stn" x="${x}" y="${y}">${k}</text><text class="val" id="sv${k}" x="${vp[0]}" y="${vp[1]}"></text></g>`; }
+  h += `<g class="pinch" id="pinchMark" aria-hidden="true"><circle r="13"/><text x="16" y="4">Δt_pp</text></g>`;
+  s.innerHTML = h;
+  s.querySelectorAll('.comp').forEach(g => {
+    const c = SCH.comps.find(c => c.id === g.dataset.c);
+    const set = on => { s.querySelectorAll('.comp').forEach(x => { x.classList.toggle('on', on && x === g); x.setAttribute('aria-pressed', on && x === g ? 'true' : 'false'); }); schemSel = on ? c.seg : null; highlight(schemSel); };
+    g.addEventListener('mouseenter', () => { if (!s.querySelector('[data-locked]')) set(true); });
+    g.addEventListener('mouseleave', () => { if (!s.querySelector('[data-locked]')) set(false); });
+    g.addEventListener('click', () => { const was = g.dataset.locked; s.querySelectorAll('.comp').forEach(x => delete x.dataset.locked); if (was) set(false); else { g.dataset.locked = '1'; set(true); } });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); g.dispatchEvent(new MouseEvent('click')); } });
+  });
+}
+buildSchem();
+function placePinch() {
+  const m = $('pinchMark'); if (!SOL || !SOL.feasible) { m.setAttribute('display', 'none'); return; }
+  m.removeAttribute('display');
+  const pos = { 'evap-inlet': [110, 96], 'pre-inlet': [110, 224], 'pre-interior': [110, 196], 'pre-parallel': [110, 168] }[SOL.pinchAt];
+  m.setAttribute('transform', `translate(${pos[0]} ${pos[1]})`);
+}
+
+// ---------- §2 T-s ----------
+let TS = null;
+function cyclePath(sol) {
+  const w = sol.w, st = w.st, pc = w.P1bar, seg = {};
+  let path = [];
+  const add = (pts, k) => { const i0 = path.length; path = path.concat(pts); seg[k] = [i0, path.length - 1]; };
+  add([[st[1].s, st[1].T], [st[2].s, st[2].T]], '1-2');
+  add(w.pre.map(p => [p[2], p[0]]), '2-3');
+  add([[st[3].s, st[3].T], [st[4].s, st[4].T]], '3-4');
+  add([[st[4].s, st[4].T], [st[5].s, st[5].T]], '4-5');
+  const tail = (w.x5 >= 1 && st[5].T > st[1].T + 0.2) ? O.isobarV(w.fluid, pc, st[5].T, st[1].T + 0.01, 12) : [[st[5].s, st[5].T]];
+  add(tail.concat([[st[1].s, st[1].T]]), '5-1');
+  return { path, seg };
+}
+const domeCache = {};
+function drawTS() {
+  const w = SOL.w; if (!w) { empty('tsPlot', SOL.reason || 'Infeasible'); TS = null; return; }
+  const d = domeCache[S.fluid] || (domeCache[S.fluid] = O.dome(S.fluid));
+  TS = cyclePath(SOL);
+  const st = w.st, ids = [1, 2, 3, 4, 5];
+  const traces = [
+    line(d.L.concat(d.V), 'Saturation dome', css('--ink-3'), { line: { color: css('--ink-3'), width: 1.2 }, hoverinfo: 'skip' }),
+    line(TS.path, 'Cycle', css('--wf'), { hoverinfo: 'skip', line: { color: css('--wf'), width: 2.4 } }),
+    { x: ids.map(i => st[i].s), y: ids.map(i => st[i].T), text: ids.map(String), mode: 'markers+text', type: 'scatter', textposition: ['bottom right', 'top left', 'top left', 'top right', 'bottom right'],
+      marker: { size: 9, color: css('--panel'), line: { color: css('--ink'), width: 1.5 } }, textfont: { family: 'IBM Plex Mono', color: css('--ink'), size: 12 },
+      hovertemplate: ids.map(i => `State ${i}<br>t %{y:.1f} °C<br>s %{x:.4f} kJ/(kg·K)<br>h ${st[i].h.toFixed(1)} kJ/kg<extra></extra>`), showlegend: false },
+    { x: [], y: [], mode: 'lines', type: 'scatter', line: { color: css('--op'), width: 6 }, opacity: 0.5, hoverinfo: 'skip', showlegend: false },
+    { x: [st[1].s], y: [st[1].T], mode: 'markers', type: 'scatter', marker: { size: 13, color: css('--op'), line: { color: css('--panel'), width: 2 } }, hoverinfo: 'skip', showlegend: false },
+  ];
+  const xs = d.L.concat(d.V).map(p => p[0]);
+  draw('tsPlot', traces, { xaxis: { title: 'Specific entropy s [kJ/(kg·K)]', range: [Math.min(...xs) - 0.03, Math.max(...xs, st[5].s) + 0.08] }, yaxis: { title: 'Temperature t [°C]', range: [-35, Math.max(S.ths + 10, O.FLUIDS[S.fluid].tc + 10)] } },
+    `T–s diagram of ${S.fluid}: evaporation at ${f1(w.tevp)} °C, condensation at 20 °C, turbine exhaust ${f1(st[5].T)} °C.`);
+  if (schemSel) highlight(schemSel);
+}
+function highlight(seg) {
+  if (!TS || !hasPlotly) return;
+  if (!seg) { Plotly.restyle('tsPlot', { x: [[]], y: [[]] }, [3]); return; }
+  const r = TS.seg[seg.join('-')]; if (!r) return;
+  const pts = TS.path.slice(r[0], r[1] + 1);
+  Plotly.restyle('tsPlot', { x: [pts.map(p => p[0])], y: [pts.map(p => p[1])] }, [3]);
+}
+function pathPoint(u) {
+  const P = TS.path; let L = 0; const cum = [0];
+  for (let i = 1; i < P.length; i++) { L += Math.hypot((P[i][0] - P[i - 1][0]) * 300, P[i][1] - P[i - 1][1]); cum.push(L); }
+  const tgt = u * L; let i = 1; while (i < cum.length - 1 && cum[i] < tgt) i++;
+  const v = (tgt - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9);
+  return [P[i - 1][0] + v * (P[i][0] - P[i - 1][0]), P[i - 1][1] + v * (P[i][1] - P[i - 1][1])];
+}
+let animOn = false, animT = 0, lastFrame = 0, stateStep = 0;
+function tick(ts) {
+  if (!animOn) return;
+  if (ts - lastFrame > 33 && TS && hasPlotly) { lastFrame = ts; animT = (animT + 0.006) % 1; const [x, y] = pathPoint(animT); Plotly.restyle('tsPlot', { x: [[x]], y: [[y]] }, [4]); }
+  requestAnimationFrame(tick);
+}
+$('tsPlay').addEventListener('click', e => {
+  if (!TS || !hasPlotly) return;
+  if (reduce) { // jump state to state instead of moving continuously
+    stateStep = stateStep % 5 + 1; const st = SOL.w.st[stateStep]; Plotly.restyle('tsPlot', { x: [[st.s]], y: [[st.T]] }, [4]);
+    e.currentTarget.textContent = `Next state (${stateStep})`; return;
+  }
+  animOn = !animOn; e.currentTarget.setAttribute('aria-pressed', animOn); e.currentTarget.textContent = animOn ? 'Pause' : 'Animate cycle'; if (animOn) requestAnimationFrame(tick);
+});
+
+function stateTable() {
+  const w = SOL.w; if (!w) { $('stateTbl').innerHTML = ''; $('stateNote').textContent = SOL.reason || ''; return; }
+  const st = w.st;
+  const rows = [
+    ['1', 'Saturated liquid, pump inlet', w.P1bar, st[1].T, st[1].h, st[1].s],
+    ['2', 'Sub-cooled liquid, preheater inlet', S.p, st[2].T, st[2].h, st[2].s],
+    ['3', 'Saturated liquid, evaporator inlet', S.p, st[3].T, st[3].h, st[3].s],
+    ['4', 'Saturated vapour, turbine inlet', S.p, st[4].T, st[4].h, st[4].s],
+    ['5', w.x5 < 1 ? `Wet vapour (x = ${w.x5.toFixed(3)}), condenser inlet` : 'Superheated vapour, condenser inlet', w.P1bar, st[5].T, st[5].h, st[5].s],
+  ];
+  if (SOL.feasible) rows.push(['6', 'Heat source in', null, S.ths, SOL.h6, null], ['7', 'Heat source, evaporator to preheater', null, SOL.T7, SOL.h7, null], ['8', 'Heat source out', null, SOL.T8, SOL.h8, null]);
+  $('stateTbl').innerHTML = '<caption>State points of the current operating point</caption><thead><tr><th scope="col">State</th><th scope="col" style="text-align:left">Description</th><th scope="col">p [bar]</th><th scope="col">t [°C]</th><th scope="col">h [kJ/kg]</th><th scope="col">s [kJ/(kg·K)]</th></tr></thead><tbody>' +
+    rows.map(r => `<tr><td>${r[0]}</td><td class="txt">${r[1]}</td><td>${r[2] == null ? '–' : f1(r[2], 2)}</td><td>${f1(r[3], 1)}</td><td>${f1(r[4], 1)}</td><td>${r[5] == null ? '–' : f1(r[5], 4)}</td></tr>`).join('') + '</tbody>';
+  const vals = { 1: `${f1(st[1].T)}°C`, 2: `${f1(st[2].T)}°C`, 3: `${f1(st[3].T)}°C`, 4: `${f1(st[4].T)}°C`, 5: `${f1(st[5].T)}°C` };
+  if (SOL.feasible) Object.assign(vals, { 6: `${f1(S.ths)}°C`, 7: `${f1(SOL.T7)}°C`, 8: `${f1(SOL.T8)}°C`, 9: '7°C' });
+  for (let k = 1; k <= 10; k++) { const el = $('sv' + k); if (el) el.textContent = vals[k] || ''; }
+  $('stateNote').textContent = 'Heat-source enthalpies are referenced to 0 °C. Working-fluid enthalpies use an arbitrary reference, so only differences matter. ' + (w.x5 < 1 ? 'The turbine exhaust ends inside the dome; the paper does not discuss this.' : '');
+}
+
+// ---------- ledgers ----------
+const EQ3 = [
+  ['1', '\\eta_{sys}=\\eta_{th}\\cdot\\eta_{HE}', 'Global efficiency: the cycle\'s efficiency times the share of the source heat actually transferred.', s => `${pct(s.etaTh)} × ${pct(s.etaHE)} = ${pct(s.etaSys)}`, ''],
+  ['2', '\\eta_{th}=\\dfrac{P_{net}}{\\dot Q_{HE}}=\\dfrac{\\dot m_{wf}\\,[(h_4-h_5)-(h_2-h_1)]}{\\dot Q_{HE}}', 'Thermal efficiency of the cycle alone.', s => `${f1(s.mwf, 3)} kg/s × [${f1(s.w.wt)} − ${f1(s.w.wp, 2)}] kJ/kg / ${f1(s.Qhe)} kW = ${pct(s.etaTh)}`, ''],
+  ['3', '\\eta_{HE}=\\dfrac{\\dot Q_{HE}}{\\dot m_{hs}(h_6-h_0)}', 'Heat-exchanger efficiency: the share of the source heat, cooled all the way to ambient, that reaches the ORC.', s => `${f1(s.Qhe)} kW / (2 × ${f1(s.h6 - O.hsH(S.htf, 7))} kJ/kg) = ${pct(s.etaHE)}`, '<b>Hidden assumption:</b> heat left in the water below t<sub>8</sub> counts as lost, even if a district-heating network could use it.'],
+  ['4', '\\eta_{sys}=\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}\\cdot\\dfrac{(h_4-h_5)-(h_2-h_1)}{h_6-h_0}', 'Eqs. 1–3 combined. The mass-flow ratio carries the pinch constraint; the second factor carries the cycle.', s => `${f1(s.r, 4)} × ${f1(s.w.wnet, 2)} / ${f1(s.h6 - O.hsH(S.htf, 7), 1)} = ${pct(s.etaSys)}`, ''],
+  ['5', '\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}=\\dfrac{\\bar c_{p,hs}(t_6-t_{evp}-\\Delta t_{pp})}{h_{evp}}', 'Fluid I: the pinch is at the evaporator inlet, so the evaporator balance alone fixes the mass flow.', s => `${s.pinchAt === 'evap-inlet' ? 'Applies here' : 'Does not apply here'}: pinch ${PL[s.pinchAt]}. Solver ratio ${f1(s.r, 4)}.`, ''],
+  ['6', '\\dfrac{\\dot m_{wf}}{\\dot m_{hs}}=\\dfrac{\\bar c_{p,hs}(t_6-t_{2}-\\Delta t_{pp})}{h_{evp}+\\bar c_{p,wf}(t_{evp}-t_2)}', 'Fluid II: the pinch is at the preheater inlet, so the whole exchanger balance fixes the mass flow.', s => `${s.pinchAt === 'pre-inlet' ? 'Applies here' : s.pinchAt === 'pre-interior' ? 'Applies approximately' : 'Does not apply here'}: pinch ${PL[s.pinchAt]}.`, ''],
+  ['7', '\\dfrac{(h_4-h_5)-(h_2-h_1)}{h_6-h_0}=\\dfrac{\\eta_{is,t}(h_4-h_{5,is})-(h_{2,is}-h_1)/\\eta_{is,p}}{h_6-h_0}', 'Component efficiencies enter only through the specific work.', s => `w_t = ${f1(s.w.wt, 2)} kJ/kg, w_p = ${f1(s.w.wp, 2)} kJ/kg`, '<b>Hidden assumption:</b> the turbine inlet is saturated vapour; superheat is neglected.'],
+  ['8', 'e=h-h_0-T_0(s-s_0)', 'Specific flow exergy relative to the dead state at 7 °C.', s => `e₆ = ${f1(s.ex.in / 2, 2)} kJ/kg`, ''],
+  ['9', '\\dot e=\\dot m\\,|h_{out}-h_{in}-T_0(s_{out}-s_{in})|', 'Exergy transferred in a stream between two states.', s => `ṁ_wf (e₄ − e₂) = ${f1(s.ex.wf)} kW`, ''],
+  ['10', '\\eta_{ex,HE}=\\dfrac{\\dot e_4-\\dot e_2}{\\dot e_6-\\dot e_0}', 'Exergetic efficiency of preheater and evaporator together. It peaks at the OHST.', s => `${f1(s.ex.wf)} kW / ${f1(s.ex.in)} kW = ${pct(s.etaExHE)}`, ''],
+];
+const EQ4 = [
+  ['11', '\\dot m_{hs}\\bar c_{p,hs}(t_6-t_7)=\\dot m_{wf}h_{evp}', 'Energy balance on the evaporator.', s => `h_evp = ${f1(s.w.hevp, 2)} kJ/kg at ${f1(S.p, 2)} bar`, ''],
+  ['12', '\\dot m_{hs}\\bar c_{p,hs}(t_7-t_8)=\\dot m_{wf}\\bar c_{p,pre,wf}(t_3-t_2)', 'Energy balance on the preheater.', s => `c̄_p,pre,wf = ${f1(s.w.cpPre, 4)} kJ/(kg·K)`, ''],
+  ['13–14', 't_7=t_3+\\Delta t_{pp},\\quad t_8=t_2+\\Delta t_{pp}', 'The ideal case: both ends of the preheater sit exactly at the pinch, so the profiles run parallel.', s => `t₇ = ${f1(s.w.tevp + S.dtpp)} °C, t₈ = ${f1(s.w.st[2].T + S.dtpp)} °C`, ''],
+  ['15', '\\mathrm{OHST}=\\dfrac{h_{evp}}{\\bar c_{p,pre,wf}}+t_{evp}+\\Delta t_{pp}', 'Divide Eq. 11 by Eq. 12 under the parallel condition. The OHST then depends only on the fluid, its pressure and the pinch.', s => `${f1(s.w.hevp, 2)} / ${f1(s.w.cpPre, 4)} + ${f1(s.w.tevp, 2)} + ${S.dtpp} = ${f1(s.ohst, 2)} °C`, '<b>Hidden assumptions:</b> constant HTF c<sub>p</sub>, and preheater inlet at t<sub>cond</sub> (pump temperature rise neglected).'],
+  ['20–22', '\\mathrm{OHST}\\gtrless t_{hs}\\;\\Leftrightarrow\\;\\text{pinch at evaporator inlet / preheater inlet}', 'Comparing the OHST with the source temperature locates the pinch without a cycle simulation.', s => `OHST ${f1(s.ohst)} °C vs t_hs ${f1(S.ths)} °C: predicted ${PL[O.predictPinch(s.ohst, S.ths)]}; pinch search ${PL[s.pinchAt]}`, ''],
+];
+function buildLedger(el, eqs) {
+  el.innerHTML = `<p class="state-msg" hidden></p>` + eqs.map(e => `<div class="eq"><div class="eqno">(${e[0]})</div><div class="eqbody"><div class="tex" data-tex="${e[1].replace(/"/g, '&quot;')}"></div><p class="eqmean">${e[2]}</p><div class="eqlive" data-live></div>${e[4] ? `<p class="eqhide">${e[4]}</p>` : ''}</div></div>`).join('');
+  el.querySelectorAll('.tex').forEach(t => tex(t.dataset.tex, t));
+}
+function fillLedger(el, eqs) {
+  const msg = el.querySelector('.state-msg'), lives = el.querySelectorAll('[data-live]');
+  const ok = SOL.feasible;
+  msg.hidden = ok; msg.textContent = ok ? '' : `No values at this operating point. ${SOL.reason}`;
+  el.classList.toggle('off', !ok);
+  if (ok) eqs.forEach((e, i) => { try { lives[i].textContent = e[3](SOL); } catch (err) { lives[i].textContent = '–'; } });
+}
+buildLedger($('ledger3'), EQ3); buildLedger($('ledger4'), EQ4);
+
+// ---------- §3 charts ----------
+function tqTraces(sol, wfName) {
+  const hs = css('--hs'), wf = css('--wf');
+  return [line(sol.TQ.hs, 'Heat source', hs, { hovertemplate: 'Heat source<br>%{x:.1f} %, %{y:.1f} °C<extra></extra>' }),
+    line(sol.TQ.wf, wfName, wf, { line: { color: wf, width: 2.4 }, hovertemplate: wfName + '<br>%{x:.1f} %, %{y:.1f} °C<extra></extra>' })];
+}
+function pinchMarker(sol) {
+  const q = sol.pinchQ, T = sol.pinchT;
+  return { x: [q, q], y: [T, T + S.dtpp], mode: 'lines+markers', type: 'scatter', name: 'Pinch Δt<sub>pp</sub>', line: { color: css('--op'), width: 2.5 }, marker: { size: 7, color: css('--op') }, hovertemplate: 'Pinch ' + S.dtpp + ' K<extra></extra>' };
+}
+function drawTQ3() {
+  if (!SOL.feasible) { empty('tq3', SOL.reason || 'Infeasible'); $('tq3cap').textContent = ''; return; }
+  draw('tq3', tqTraces(SOL, S.fluid).concat([pinchMarker(SOL)]), { xaxis: { title: 'Heat flow [% of source heat down to t<sub>0</sub>]', range: [0, 100] }, yaxis: { title: 'Temperature [°C]' }, shapes: [vline(SOL.TQ.Q8, css('--ink-3'), 'dot')] },
+    `T–Q diagram. Water leaves at ${f1(SOL.T8)} °C; ${f1(SOL.TQ.Q8)} % of source heat unused.`);
+  $('tq3cap').innerHTML = `Water leaves at <b class="num">${f1(SOL.T8)} °C</b>. Everything left of the dotted line, ${f1(SOL.TQ.Q8)} % of the source heat, is discarded. Pinch ${PL[SOL.pinchAt]} (${PEQ[SOL.pinchAt]}).`;
+}
+function drawEx() {
+  if (!SOL.feasible) { empty('exBar', 'No exergy balance at this operating point'); return; }
+  const e = SOL.ex;
+  const cats = ['Source exergy ė<sub>6</sub>', 'Destroyed in HE', 'Lost with water ė<sub>8</sub>', 'Delivered to ORC'];
+  const vals = [e.in, e.destr, e.loss, e.wf];
+  draw('exBar', [{ type: 'bar', orientation: 'h', y: cats, x: vals, marker: { color: [css('--ink-3'), css('--hs'), css('--ctx'), css('--wf')] }, text: vals.map((v, i) => i ? `${f1(v)} kW · ${f1(100 * v / e.in)} %` : `${f1(v)} kW`), textposition: 'outside', cliponaxis: false, textfont: { color: css('--ink-2'), family: 'IBM Plex Mono', size: 11 }, hovertemplate: '%{y}: %{x:.1f} kW<extra></extra>' }],
+    { margin: { l: 10, r: 96, t: 6, b: 38 }, yaxis: { autorange: 'reversed', mirror: false, ticks: '' }, xaxis: { title: 'Exergy flow [kW]' }, showlegend: false, bargap: 0.35 },
+    `Exergy: ${f1(e.in)} kW in; ${f1(e.destr)} destroyed, ${f1(e.loss)} lost, ${f1(e.wf)} delivered.`);
+}
+
+// ---------- §4 ----------
+function drawFig3() {
+  const w = SOL.w; if (!w) { empty('fig3', SOL.reason || 'Infeasible'); return; }
+  const lo = w.tevp + S.dtpp + 0.5, hi = Math.min(w.tevp + S.dtpp + 110, 250);
+  const xs = [], es = [], ex = [];
+  for (let i = 0; i <= 70; i++) { const t = lo + (hi - lo) * i / 70; const s = O.solveSimple(S.fluid, S.p, t, opts()); if (s.feasible) { xs.push(t); es.push(100 * s.etaSys); ex.push(100 * s.etaExHE); } }
+  const ohSim = O.ohstFromSim(S.fluid, S.p, opts());
+  const tr = [
+    { x: xs, y: es, name: SYM.sys, type: 'scatter', mode: 'lines', line: { color: css('--wf'), width: 2.4 }, hovertemplate: 't<sub>hs</sub> %{x:.1f} °C<br>η<sub>sys</sub> %{y:.2f} %<extra></extra>' },
+    { x: xs, y: ex, name: SYM.exHE, type: 'scatter', mode: 'lines', line: { color: css('--c7'), width: 2, dash: 'dash' }, hovertemplate: 't<sub>hs</sub> %{x:.1f} °C<br>η<sub>ex,HE</sub> %{y:.2f} %<extra></extra>' },
+  ];
+  if (SOL.feasible) tr.push({ x: [S.ths], y: [100 * SOL.etaSys], name: 'Operating point', mode: 'markers', type: 'scatter', marker: { size: 11, color: css('--op'), line: { color: css('--panel'), width: 2 } }, hovertemplate: 'Now: %{y:.2f} %<extra></extra>' });
+  draw('fig3', tr, { xaxis: { title: 'Heat source temperature t<sub>hs</sub> [°C]' }, yaxis: { title: 'Efficiency [%]' },
+    shapes: [vline(SOL.ohst, css('--ink'), 'dot'), vline(ohSim, css('--c7'), 'dash')],
+    annotations: [{ x: SOL.ohst, y: 1, yref: 'paper', text: 'Eq. 15: ' + f1(SOL.ohst) + ' °C', showarrow: false, xanchor: 'right', yanchor: 'top', xshift: -4, font: { size: 11, family: 'IBM Plex Mono', color: css('--ink') } },
+      { x: ohSim, y: 0.88, yref: 'paper', text: 'simulation: ' + f1(ohSim) + ' °C', showarrow: false, xanchor: 'left', yanchor: 'top', xshift: 4, font: { size: 11, family: 'IBM Plex Mono', color: css('--c7') } }] },
+    `Efficiency against source temperature for ${S.fluid} at ${f1(S.p, 1)} bar. OHST ${f1(SOL.ohst)} °C (Eq. 15), ${f1(ohSim)} °C (simulation).`);
+}
+function drawFig5() {
+  const fl = $('f5fluid').value, f = O.FLUIDS[fl], tr = [];
+  const cols = [css('--wf'), css('--c7'), css('--cw'), css('--c6'), css('--ink-2')];
+  [10, 15, 20, 25, 30].filter(p => p < 0.97 * f.pc).forEach((p, i) => {
+    const ts = O.Tsat(fl, p), xs = [], ys = [];
+    for (let t = 20; t <= ts - 0.2; t += Math.max(0.5, (ts - 20) / 80)) { xs.push(t); ys.push(O.cpLiquid(fl, p, t)); }
+    tr.push({ x: xs, y: ys, type: 'scatter', mode: 'lines', name: p + ' bar', line: { color: cols[i], width: 2 }, hovertemplate: p + ' bar<br>%{x:.1f} °C<br>c<sub>p</sub> %{y:.3f} kJ/(kg·K)<extra></extra>' });
+    const w = O.wfSide(fl, p, opts()); if (w) tr.push({ x: [20, ts], y: [w.cpPre, w.cpPre], type: 'scatter', mode: 'lines', line: { color: cols[i], width: 1, dash: 'dash' }, showlegend: false, hovertemplate: 'mean c̄<sub>p,pre,wf</sub> = ' + w.cpPre.toFixed(3) + '<extra></extra>' });
+  });
+  draw('fig5', tr, { xaxis: { title: 'Process temperature of ' + fl + ' [°C]' }, yaxis: { title: 'c<sub>p</sub> [kJ/(kg·K)]' } }, `Liquid heat capacity of ${fl} rising toward saturation on five isobars.`);
+}
+$('f5fluid').addEventListener('change', drawFig5);
+const HTFCOL = () => ({ water: css('--wf'), air: css('--c7'), vp1: css('--ink-2') });
+function drawFig6() {
+  const tr = [], cols = HTFCOL();
+  for (const k of ['water', 'air', 'vp1']) {
+    const T = [], v = [], H = O.HTF[k], mean = (O.hsH(k, 170) - O.hsH(k, 30)) / 140;
+    for (let t = 30; t <= 170; t += 2) { T.push(t); v.push(100 * (H.cpAt(t) - mean) / mean); }
+    tr.push({ x: T, y: v, type: 'scatter', mode: 'lines', name: H.label, line: { color: cols[k], width: 2, dash: k === 'air' ? 'dash' : k === 'vp1' ? 'dot' : 'solid' }, hovertemplate: H.label + '<br>%{x} °C: %{y:.1f} %<extra></extra>' });
+  }
+  draw('fig6', tr, { xaxis: { title: 'Temperature [°C]' }, yaxis: { title: 'Deviation of c<sub>p</sub> from mean [%]' } }, 'Heat-capacity deviation from the mean for water, air and Therminol VP-1, 30 to 170 °C.');
+}
+function drawFig7() {
+  const p = 0.7 * O.FLUIDS.R1234yf.pc, tr = [], shapes = [], cols = HTFCOL(), oh = {};
+  for (const k of ['water', 'air', 'vp1']) {
+    const o = Object.assign({}, POPTS, { htf: k }); const xs = [], ys = [];
+    for (let t = 110; t <= 170; t += 1) { const s = O.solveSimple('R1234yf', p, t, o); if (s.feasible) { xs.push(t); ys.push(100 * s.etaSys); } }
+    tr.push({ x: xs, y: ys, type: 'scatter', mode: 'lines', name: O.HTF[k].label, line: { color: cols[k], width: 2, dash: k === 'air' ? 'dash' : k === 'vp1' ? 'dot' : 'solid' }, hovertemplate: '%{x} °C: %{y:.2f} %<extra></extra>' });
+    oh[k] = O.ohstFromSim('R1234yf', p, o); shapes.push(vline(oh[k], cols[k], 'dot'));
+  }
+  const eq = O.ohst('R1234yf', p, POPTS);
+  draw('fig7', tr, { xaxis: { title: 'Heat source temperature t<sub>hs</sub> [°C]' }, yaxis: { title: SYM.sys + ' [%]' }, shapes }, `R1234yf efficiency against source temperature for three HTFs; simulated OHST water ${f1(oh.water)}, air ${f1(oh.air)}, oil ${f1(oh.vp1)} °C.`);
+  $('fig7cap').innerHTML = `Simulated OHST: water <b class="num">${f1(oh.water)} °C</b>, air <b class="num">${f1(oh.air)} °C</b>, VP-1 <b class="num">${f1(oh.vp1)} °C</b>. Eq. 15 gives <b class="num">${f1(eq)} °C</b>. The paper reports 141.2 °C for water and air, 137.3 °C for VP-1 and 141.6 °C from Eq. 15. As in the paper, the oil, whose c<sub>p</sub> varies most, shifts the OHST down.`;
+  return { oh, eq };
+}
+
+let OHC = null;
+function ohstCurves() {
+  const key = S.dtpp + '|' + S.etaT; if (OHC && OHC.key === key) return OHC;
+  const curves = {};
+  for (const n of fluids) {
+    const f = O.FLUIDS[n], pts = [];
+    const pmax = Math.min(f.pmax, 0.95 * f.pc), pmin = Math.max(O.psat(n, 35), 1);
+    for (let i = 0; i <= 30; i++) { const p = pmin + (pmax - pmin) * i / 30; const v = O.ohst(n, p, opts()); if (isFinite(v)) pts.push([p, v]); }
+    const pm = Math.min(f.pmax, 0.985 * f.pc);
+    curves[n] = { pts, atMax: O.ohst(n, pm, opts()), pm };
+  }
+  OHC = { key, curves }; return OHC;
+}
+function drawFig8() {
+  const C = ohstCurves().curves;
+  const rank = fluids.map(n => ({ n, d: Math.abs(C[n].atMax - S.ths), oh: C[n].atMax, pm: C[n].pm })).sort((a, b) => a.d - b.d);
+  const pal = [css('--wf'), css('--c7'), css('--cw'), css('--c6')], col = {}; let ci = 0;
+  [S.fluid].concat(rank.slice(0, 3).map(r => r.n)).forEach(n => { if (!col[n] && ci < 4) col[n] = pal[ci++]; });
+  const tr = [], ann = [];
+  for (const n of fluids) {
+    const h = !!col[n], pts = C[n].pts; if (!pts.length) continue;
+    tr.push({ x: pts.map(p => p[0]), y: pts.map(p => p[1]), type: 'scatter', mode: 'lines', name: n, showlegend: h, line: { color: h ? col[n] : css('--ctx'), width: h ? 2.6 : 1.3 }, hovertemplate: n + '<br>%{x:.1f} bar → OHST %{y:.1f} °C<extra></extra>' });
+    if (h) { const p = pts[pts.length - 1]; ann.push({ x: p[0], y: p[1], text: n, showarrow: false, xanchor: 'left', xshift: 5, font: { size: 11, family: 'IBM Plex Mono', color: col[n] } }); }
+  }
+  tr.push({ x: [0, 40], y: [S.ths, S.ths], type: 'scatter', mode: 'lines', name: SYM.ths, line: { color: css('--op'), width: 1.5, dash: 'dash' }, hoverinfo: 'skip' });
+  if (isFinite(SOL.ohst)) tr.push({ x: [S.p], y: [SOL.ohst], mode: 'markers', type: 'scatter', name: 'Operating point', marker: { size: 11, color: css('--op'), line: { color: css('--panel'), width: 2 } }, hovertemplate: S.fluid + ' now: %{y:.1f} °C<extra></extra>' });
+  draw('fig8', tr, { xaxis: { title: 'Evaporating pressure [bar]', range: [0, 42] }, yaxis: { title: 'OHST [°C]' }, annotations: ann }, `OHST curves of 13 fluids; closest to t_hs ${f1(S.ths)} °C: ${rank.slice(0, 3).map(r => r.n).join(', ')}.`);
+  $('rankTbl').innerHTML = '<caption>Fluids ranked by distance of OHST to t<sub>hs</sub></caption><thead><tr><th scope="col">Fluid</th><th scope="col">p [bar]</th><th scope="col">OHST [°C]</th><th scope="col">|Δ| [K]</th></tr></thead><tbody>' + rank.map(r => `<tr class="${r.n === S.fluid ? 'sel' : ''}"><td>${r.n}</td><td>${f1(r.pm, 1)}</td><td>${f1(r.oh)}</td><td>${f1(r.d)}</td></tr>`).join('') + '</tbody>';
+}
+
+// Fig. 9: chunked so the page stays responsive
+function computeFig9(o, onProgress) {
+  return new Promise(res => {
+    const rows = []; let i = 0;
+    const next = () => {
+      if (i >= fluids.length) { res(rows); return; }
+      const n = fluids[i++], f = O.FLUIDS[n];
+      for (const p of [0.5 * f.pc, 0.7 * f.pc, Math.min(f.pmax, 0.95 * f.pc)]) { const a = O.ohst(n, p, o), b = O.ohstFromSim(n, p, Object.assign({}, o, { htf: 'water' })); if (isFinite(a) && isFinite(b)) rows.push({ n, p, a, b, d: 100 * (a - b) / b }); }
+      if (onProgress) onProgress(i); setTimeout(next, 0);
+    };
+    next();
+  });
+}
+let F9 = null;
+$('runFig9').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true;
+  F9 = await computeFig9(opts(), i => { b.textContent = `Computing ${i}/${fluids.length}…`; });
+  b.disabled = false; b.textContent = 'Run again'; drawFig9();
+});
+function drawFig9() {
+  if (!F9) return; const rows = F9;
+  const mean = rows.reduce((s, r) => s + Math.abs(r.d), 0) / rows.length;
+  const lo = Math.min(...rows.map(r => r.b)) - 5, hi = Math.max(...rows.map(r => r.b)) + 5;
+  const sel = rows.filter(r => r.n === S.fluid), oth = rows.filter(r => r.n !== S.fluid);
+  const mk = (rs, c, name, sz, yk) => ({ x: rs.map(r => r.b), y: rs.map(r => r[yk]), text: rs.map(r => `${r.n} @ ${r.p.toFixed(1)} bar`), type: 'scatter', mode: 'markers', name, marker: { size: sz, color: c, line: { color: css('--panel'), width: 1 } }, hovertemplate: yk === 'a' ? '%{text}<br>sim %{x:.1f} °C<br>Eq. 15 %{y:.1f} °C<extra></extra>' : '%{text}<br>deviation %{y:.2f} %<extra></extra>' });
+  draw('fig9a', [{ x: [lo, hi], y: [lo, hi], mode: 'lines', type: 'scatter', name: 'y = x', line: { color: css('--ink-3'), width: 1, dash: 'dot' }, hoverinfo: 'skip' }, mk(oth, css('--ctx'), 'Other fluids', 8, 'a'), mk(sel, css('--op'), S.fluid, 11, 'a')],
+    { xaxis: { title: 'OHST from simulation [°C]' }, yaxis: { title: 'OHST from Eq. 15 [°C]' } }, `Predicted against simulated OHST, ${rows.length} points.`);
+  draw('fig9b', [mk(oth, css('--ctx'), 'Other fluids', 8, 'd'), mk(sel, css('--op'), S.fluid, 11, 'd')], { xaxis: { title: 'OHST from simulation [°C]' }, yaxis: { title: 'Relative deviation of Eq. 15 [%]' }, shapes: [{ type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 0, y1: 0, line: { color: css('--ink-3'), width: 1 } }] }, `Mean absolute deviation ${mean.toFixed(2)} %.`);
+  $('fig9cap').innerHTML = `Mean absolute relative deviation <b class="num">${mean.toFixed(2)} %</b> over ${rows.length} points; the paper reports 0.81 %. Eq. 15 sits below the simulated value, increasingly so near the critical point, where this model's liquid c<sub>p</sub> varies most along the preheater.`;
+}
+
+// ---------- §5 ----------
+function s5title() {
+  const htf = { water: 'thermal water', air: 'hot air', vp1: 'Therminol VP-1' }[S.htf];
+  $('s5title').textContent = `Case study: ${htf} at ${f1(S.ths, S.ths % 1 ? 1 : 0)} °C`;
+  $('s5note').textContent = (S.ths === 140 && S.htf === 'water') ? 'These are the paper\'s conditions.' : 'The paper uses thermal water at 140 °C; use "Reset to paper case" to return.';
+}
+function drawFig10() {
+  const a = $('f10a').value, b = $('f10b').value, tr = [], notes = [];
+  [[a, css('--wf'), 'solid'], [b, css('--c7'), 'dash']].forEach(([n, c, dash]) => {
+    const [lo, hi] = O.pRange(n, S.ths, opts()); if (!(hi > lo)) { notes.push(`${n}: infeasible at this t<sub>hs</sub>`); return; }
+    const xs = [], ys = [];
+    for (let i = 0; i <= 50; i++) { const p = lo + (hi - lo) * i / 50; const s = O.solveSimple(n, p, S.ths, opts()); if (s.feasible) { xs.push(p); ys.push(100 * s.etaSys); } }
+    tr.push({ x: xs, y: ys, type: 'scatter', mode: 'lines', name: n, line: { color: c, width: 2.4, dash }, hovertemplate: n + '<br>%{x:.2f} bar: %{y:.2f} %<extra></extra>' });
+    const o = O.optimizeSimple(n, S.ths, opts());
+    if (o) { tr.push({ x: [o.pOEP], y: [100 * o.sol.etaSys], type: 'scatter', mode: 'markers', marker: { size: 10, color: c, symbol: o.atBound ? 'triangle-right' : 'circle' }, showlegend: false, hovertemplate: (o.atBound ? 'Pressure limit ' : 'OEP ') + '%{x:.2f} bar, %{y:.2f} %<extra></extra>' });
+      notes.push(`${n}: ${o.atBound ? 'efficiency rises to the pressure limit, ' + f1(o.pOEP, 2) + ' bar (fluid II)' : 'interior optimum at ' + f1(o.pOEP, 2) + ' bar (fluid I)'}, η<sub>sys</sub> ${pct(o.sol.etaSys)}`); }
+  });
+  if (!tr.length) { empty('fig10', 'Neither fluid is feasible at this source temperature'); } else
+  draw('fig10', tr, { xaxis: { title: 'Evaporating pressure [bar]' }, yaxis: { title: SYM.sys + ' [%]' } }, notes.join('. '));
+  $('fig10cap').innerHTML = notes.join('. ') + '.';
+}
+['f10a', 'f10b'].forEach(id => $(id).addEventListener('change', drawFig10));
+function optAll(ths, o) { return fluids.map(n => { const r = O.optimizeSimple(n, ths, o); return r ? { n, p: r.pOEP, eta: r.sol.etaSys, ex: r.sol.etaExHE, pin: r.sol.pinchAt, b: r.atBound } : { n, p: NaN, eta: NaN, ex: NaN }; }); }
+function drawFig11() {
+  const rows = optAll(S.ths, opts()).filter(r => isFinite(r.eta));
+  if (!rows.length) { empty('fig11', 'No fluid is feasible at this source temperature'); $('f11tbl').innerHTML = ''; $('f11busy').textContent = ''; return; }
+  const best = rows.reduce((m, r) => (r.eta > m.eta ? r : m));
+  draw('fig11', [
+    { x: rows.map(r => r.n), y: rows.map(r => 100 * r.eta), type: 'bar', name: SYM.sys + ' (optimised)', marker: { color: rows.map(r => r.n === best.n ? css('--wf') : css('--ctx')) }, hovertemplate: '%{x}<br>η<sub>sys</sub> %{y:.2f} %<extra></extra>' },
+    { x: rows.map(r => r.n), y: rows.map(r => 100 * r.ex), type: 'scatter', mode: 'markers', name: SYM.exHE, marker: { size: 9, color: css('--c7'), symbol: 'diamond', line: { color: css('--panel'), width: 1.5 } }, hovertemplate: '%{x}<br>η<sub>ex,HE</sub> %{y:.1f} %<extra></extra>' },
+  ], { xaxis: { tickangle: -40, mirror: false }, yaxis: { title: 'Efficiency [%]' }, bargap: 0.35, margin: { l: 58, r: 14, t: 12, b: 84 } }, `Optimised efficiencies for ${rows.length} fluids; best ${best.n} at ${pct(best.eta)}.`);
+  $('f11tbl').innerHTML = '<caption>Optimised fluids, sorted by η<sub>sys</sub></caption><thead><tr><th scope="col">Fluid</th><th scope="col">OEP [bar]</th><th scope="col">η<sub>sys</sub></th><th scope="col">η<sub>ex,HE</sub></th><th scope="col" style="text-align:left">Pinch</th></tr></thead><tbody>' +
+    rows.slice().sort((a, b) => b.eta - a.eta).map(r => `<tr class="${r.n === best.n ? 'sel' : ''}"><td>${r.n}${O.FLUIDS[r.n].inTable ? '' : ' *'}</td><td>${f1(r.p, 2)}${r.b ? ' (limit)' : ''}</td><td>${pct(r.eta)}</td><td>${pct(r.ex, 1)}</td><td class="txt" style="min-width:9rem">${PL[r.pin]}</td></tr>`).join('') + '</tbody>';
+  $('f11busy').textContent = `best: ${best.n} · * not in Table 2`;
+}
+function drawFig12() {
+  const a = O.solveSimple('R227ea', 28, S.ths, opts()), b = O.solveSimple('R245fa', 20, S.ths, opts()), tr = [], sh = [];
+  if (a.feasible) { tr.push(...tqTraces(a, 'R227ea @ 28 bar')); sh.push(vline(a.TQ.Q8, css('--wf'), 'dot')); }
+  if (b.feasible) { tr.push(line(b.TQ.wf, 'R245fa @ 20 bar', css('--c7'), { line: { color: css('--c7'), width: 2.2, dash: 'dash' }, hovertemplate: 'R245fa<br>%{x:.1f} %, %{y:.1f} °C<extra></extra>' })); sh.push(vline(b.TQ.Q8, css('--c7'), 'dot')); }
+  if (!tr.length) { empty('fig12', 'Both cases are infeasible at this source temperature'); return; }
+  draw('fig12', tr, { xaxis: { title: 'Heat flow [%]', range: [0, 100] }, yaxis: { title: 'Temperature [°C]' }, shapes: sh }, 'T–Q diagrams of R227ea at 28 bar and R245fa at 20 bar.');
+}
+function buildDual() {
+  const s = $('dualSchem');
+  const P = (d, c, cls = 'pipe') => `<path class="${cls}" d="${d}" stroke="var(${c})"/>`;
+  let h = '';
+  const box = (x, y, w, hh, lab) => { let coil = `M${x + 6} ${y + hh / 2}`; for (let i = 0; i < 6; i++) coil += ` l8 ${i % 2 ? 12 : -12}`; return `<rect class="box" x="${x}" y="${y}" width="${w}" height="${hh}"/><path class="coil" d="${coil}"/><text class="lbl" x="${x + w / 2}" y="${y + hh + 14}" text-anchor="middle">${lab}</text>`; };
+  ['M330 14 V44 H370', 'M370 72 H330 V110', 'M330 110 H250 V44 H230', 'M330 110 H410 V200 H370', 'M230 72 H200 V200 H230', 'M230 228 H200 V262 H300', 'M370 228 H410 V262 H300', 'M300 262 V292'].forEach(d => h += P(d, '--hs') + P(d, '--panel', 'flow'));
+  ['M430 58 H560 V100', 'M560 160 V200 H520', 'M486 214 H430', 'M370 214 H350 V140 H440 V86 H430'].forEach(d => h += P(d, '--wf') + P(d, '--panel', 'flow'));
+  ['M170 58 H60 V100', 'M60 160 V200 H90', 'M130 214 H170', 'M230 214 H260 V150 H160 V86 H170'].forEach(d => h += P(d, '--c7') + P(d, '--panel', 'flow'));
+  h += box(370, 30, 60, 56, 'HT evaporator') + box(370, 186, 60, 56, 'HT preheater') + box(170, 30, 60, 56, 'LT evaporator') + box(170, 186, 60, 56, 'LT preheater');
+  h += `<path class="box" d="M540 100 L580 90 V170 L540 160 Z"/><text class="lbl" x="560" y="188" text-anchor="middle">HT turbine</text>`;
+  h += `<path class="box" d="M40 90 L80 100 V160 L40 170 Z"/><text class="lbl" x="60" y="188" text-anchor="middle">LT turbine</text>`;
+  h += `<circle class="box" cx="500" cy="214" r="14"/><circle class="box" cx="116" cy="214" r="14"/>`;
+  h += `<text class="lbl" x="338" y="12">Thermal water</text><text class="lbl" x="310" y="298">Reservoir</text><text class="val" id="dsT2" x="252" y="104"></text><text class="val" id="dsT7" x="414" y="252"></text><text class="val" id="dsT5" x="140" y="278"></text><text class="val" id="dsSplit" x="338" y="128"></text>`;
+  s.innerHTML = h;
+}
+buildDual();
+function updDual(opt) {
+  const lt = $('dLt').value;
+  let pHT = +$('dPht').value;
+  const pLT = O.pRange(lt, null, opts())[1];
+  if (opt) { const r = O.optimizeDual('R245fa', lt, S.ths, opts()); if (r.sol.feasible) { pHT = r.pHT; $('dPht').value = pHT; $('dSplit').value = 0; } }
+  const split = +$('dSplit').value;
+  const s = O.solveDual('R245fa', lt, pHT, pLT, S.ths, Object.assign(opts(), { split }));
+  $('dPhtO').textContent = f1(pHT, 2) + ' bar';
+  if (!s.feasible) {
+    $('dSplitO').textContent = '–';
+    $('dualKpi').innerHTML = `<div class="kpi"><span class="k">Infeasible</span><span class="d" style="font-family:var(--f-body);font-size:0.85rem">${s.reason}. Lower p<sub>evp,HT</sub> or raise t<sub>hs</sub>.</span></div>`;
+    ['dsT2', 'dsT7', 'dsT5', 'dsSplit'].forEach(id => $(id).textContent = '');
+    empty('fig14a', 'Dual cycle infeasible'); empty('fig14b', 'Dual cycle infeasible'); $('fig14cap').textContent = ''; return;
+  }
+  $('dSplitO').textContent = f1(100 * s.y, 1) + ' %' + (split < s.yMin ? ' (minimum)' : '');
+  const simple = O.optimizeSimple(lt, S.ths, opts());
+  const g = simple ? (s.etaSys / simple.sol.etaSys - 1) : NaN;
+  $('dualKpi').innerHTML = [
+    ['η<sub>sys,dual</sub>', pct(s.etaSys), 'paper: 11.07 % (R227ea), 10.53 % (R1234yf)'],
+    ['Change against simple ' + lt, (g >= 0 ? '+' : '') + f1(100 * g, 2) + ' %', 'paper: +6.65 %'],
+    ['η<sub>ex,HE,dual</sub>', pct(s.etaExHE), 'paper: 86.44 % / 83.1 %'],
+    ['Power, HT + LT', f1(s.PHT) + ' + ' + f1(s.PLT) + ' kW', `ṁ ${f1(s.mHT, 3)} + ${f1(s.mLT, 3)} kg/s`],
+    ['t<sub>2</sub> after HT evaporator', f1(s.T2) + ' °C', `OHST of ${lt} at ${f1(pLT, 1)} bar: ${f1(O.ohst(lt, pLT, opts()))} °C`],
+  ].map(k => `<div class="kpi"><span class="k">${k[0]}</span><span class="v">${k[1]}</span><span class="d">${k[2]}</span></div>`).join('');
+  $('dsT2').textContent = `2: ${f1(s.T2)}°C`; $('dsT7').textContent = `7: ${f1(s.T7)}°C`; $('dsT5').textContent = `5: ${f1(s.L.T8)}°C`; $('dsSplit').textContent = `split LT ${f1(100 * s.x, 0)} % / HT ${f1(100 * s.y, 0)} %`;
+  draw('fig14a', [line(s.TQ.ht.hs, 'Water, HT path', css('--hs')), line(s.TQ.ht.wf, 'R245fa', css('--wf'))], { xaxis: { title: 'Heat flow, HT loop [kW]' }, yaxis: { title: 'Temperature [°C]', range: [0, S.ths + 10] } }, `HT loop T–Q: water ${f1(S.ths)} to ${f1(s.T7)} °C.`);
+  draw('fig14b', [line(s.TQ.lt.hs, 'Water, LT branch', css('--hs')), line(s.TQ.lt.wf, lt, css('--c7'))], { xaxis: { title: 'Heat flow, LT branch [kW]' }, yaxis: { title: 'Temperature [°C]', range: [0, S.ths + 10] }, shapes: [vline(s.TQ.lt.Q0, css('--ink-3'), 'dot')] }, `LT loop T–Q with ${lt}; water leaves at ${f1(s.L.T8)} °C.`);
+  $('fig14cap').innerHTML = `Left: the full stream evaporates R245fa (flat segment). Then ${f1(100 * s.y, 1)} % of the water preheats it and leaves at <b class="num">${f1(s.T7)} °C</b>. The HT preheater's hot end is pinned at Δt<sub>pp</sub> because t<sub>2</sub> = t<sub>evp,HT</sub> + Δt<sub>pp</sub>, and the liquid c<sub>p</sub> rises toward saturation, so the profiles cannot run parallel and that branch leaves warm. Right: the LT loop on the remaining ${f1(100 * s.x, 1)} %. ${g < 0.01 ? '<b>With this property model the dual cycle does not reproduce the paper\'s gain; see §6.</b>' : ''}`;
+}
+['dLt', 'dPht', 'dSplit'].forEach(id => $(id).addEventListener('input', () => updDual(false)));
+$('dOpt').addEventListener('click', () => updDual(true));
+
+// ---------- §6: computed at the paper's own conditions ----------
+const R = {};
+let REPRO_F7 = null;
+async function computeRepro() {
+  $('reproBusy').textContent = 'computing…';
+  R.f7 = REPRO_F7; renderRepro(); await new Promise(r => setTimeout(r, 0));
+  R.f11 = optAll(140, POPTS); renderRepro(); await new Promise(r => setTimeout(r, 0));
+  R.d227 = O.optimizeDual('R245fa', 'R227ea', 140, POPTS).sol; R.dyf = O.optimizeDual('R245fa', 'R1234yf', 140, POPTS).sol; renderRepro();
+  const rows = await computeFig9(POPTS); R.fig9 = rows.reduce((s, r) => s + Math.abs(r.d), 0) / rows.length;
+  $('reproBusy').textContent = ''; renderRepro();
+}
+function renderRepro() {
+  const r11 = R.f11 ? Object.fromEntries(R.f11.map(r => [r.n, r])) : {};
+  const s227 = O.solveSimple('R227ea', 28, 140, POPTS);
+  const w = '…';
+  const ok = x => x && x.feasible;
+  const rows = [
+    ['t<sub>evp</sub> of R245fa at 19.2 bar', '119.7 °C', f1(O.Tsat('R245fa', 19.2), 1) + ' °C'],
+    ['OHST of R227ea at 28 bar (Eq. 15)', '129.7 °C', f1(O.ohst('R227ea', 28, POPTS), 1) + ' °C'],
+    ['OHST of R1234yf at 0.7 p<sub>c</sub> (Eq. 15)', '141.6 °C', R.f7 ? f1(R.f7.eq, 1) + ' °C' : w],
+    ['OHST of R1234yf, simulated, water', '141.2 °C', R.f7 ? f1(R.f7.oh.water, 1) + ' °C' : w],
+    ['OHST of R1234yf, simulated, VP-1', '137.3 °C', R.f7 ? f1(R.f7.oh.vp1, 1) + ' °C' : w],
+    ['Mean |deviation|, Eq. 15 against simulation', '0.81 %', R.fig9 != null ? R.fig9.toFixed(2) + ' %' : w],
+    ['η<sub>sys</sub> of R227ea at 28 bar', '10.38 %', pct(s227.etaSys)],
+    ['η<sub>ex,HE</sub> of R227ea at 28 bar', '82.65 %', pct(s227.etaExHE)],
+    ['η<sub>sys</sub> of R1234yf, optimised', '9.8 %', r11.R1234yf ? pct(r11.R1234yf.eta) : w],
+    ['Best fluid in Fig. 11', 'R227ea', R.f11 ? R.f11.filter(r => isFinite(r.eta)).reduce((m, r) => r.eta > m.eta ? r : m).n : w],
+    ['η<sub>sys</sub>, dual R245fa + R227ea', '11.07 %', ok(R.d227) ? pct(R.d227.etaSys) : w],
+    ['η<sub>ex,HE</sub>, dual R245fa + R227ea', '86.44 %', ok(R.d227) ? pct(R.d227.etaExHE) : w],
+    ['η<sub>sys</sub>, dual R245fa + R1234yf', '10.53 %', ok(R.dyf) ? pct(R.dyf.etaSys) : w],
+  ];
+  $('repro').innerHTML = '<caption>Thermal water at 140 °C, Δt<sub>pp</sub> 10 K, η<sub>is,t</sub> 0.9</caption><thead><tr><th scope="col">Quantity</th><th scope="col">Paper</th><th scope="col">Prototype</th></tr></thead><tbody>' + rows.map(r => `<tr><td class="txt">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('') + '</tbody>';
+}
+const ICON = {
+  ok: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  part: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  no: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+};
+const VERD = { ok: 'Supported', part: 'Partly supported', no: 'Not reproduced' };
+const CLAIMS = [
+  ['ok', 'The OHST depends only on evaporation pressure for a given pinch (Eq. 15), if the HTF has near-constant c<sub>p</sub>.', 'Holds by construction. Fig. 7 confirms that the oil, whose c<sub>p</sub> varies, shifts the OHST.'],
+  ['part', 'Predicted and simulated OHSTs differ only slightly (0.81 %).', 'This model finds larger gaps near the critical point, where liquid c<sub>p</sub> is far from constant along the preheater. Recheck with reference-quality properties.'],
+  ['ok', 'Comparing t<sub>hs</sub> with the OHST locates the pinch without simulation (Eq. 20–22).', 'Agrees with the full pinch search except within a few kelvin of the OHST. Try the sweep at the top of the page.'],
+  ['ok', 'Screening fluids by |OHST − t<sub>hs</sub>| finds the best candidates; R227ea is best at 140 °C.', 'This model ranks R227ea first and R1234yf second, as the paper does.'],
+  ['no', 'A dual-fluid ORC with R245fa and R227ea raises η<sub>sys</sub> to 11.07 % (+6.65 %).', 'Not reproduced. The HT preheater cannot run parallel, so its water branch leaves warm. Either the paper\'s split differs from Fig. 13, or the gain depends on near-critical property detail.'],
+  ['part', 'The OHST should be verified experimentally with several HTFs.', 'Still open; neither the paper nor this page has experimental data.'],
+];
+$('claims').innerHTML = CLAIMS.map(c => `<li class="${c[0]}">${ICON[c[0]]}<span><span class="sr">${VERD[c[0]]}: </span><b>${c[1]}</b><br>${c[2]}</span></li>`).join('');
+const ISSUES = [
+  ['Thirteen fluids, twelve in the table', 'The text says thirteen candidates, but Table 2 lists twelve. Fig. 11 includes R152a, which has no Table 2 row. It is added here with literature constants and marked with an asterisk.'],
+  ['Eq. 19 is not a standard deviation', 'It is the pointwise relative deviation of c<sub>p</sub>(T) from its mean, which is why Fig. 6 changes sign.'],
+  ['Units in the nomenclature', 'c<sub>p</sub> is listed as kg/kg K; it should be kJ/(kg·K).'],
+  ['82.6 % or 82.65 %', 'The conclusion rounds the §5.1 value. The relative gains (11.07/10.38 gives +6.65 %, 86.44/82.65 gives +4.59 %) are internally consistent.'],
+  ['The assumptions behind Eq. 15', 'Constant HTF c<sub>p</sub>, preheater inlet at t<sub>cond</sub>, and one mean liquid c<sub>p</sub>. With strongly varying c<sub>p</sub> a fully parallel preheater profile is impossible, so the OHST is an idealisation.'],
+  ['Wet turbine exhaust', 'Superheat at the turbine inlet is neglected. For R134a, R152a and R1234yf near their maximum pressure, expansion from saturated vapour ends slightly inside the dome. The paper does not discuss this.'],
+  ['Efficiency without cost', 'Pushing the pinch to the preheater side maximises η<sub>sys</sub> but also the required heat-exchanger area. Neither area nor cost is assessed.'],
+  ['Pressurised water above 180 °C', 'At 10 bar, water boils at about 180 °C. Higher OHST values imply raising the source pressure, which the paper mentions only in passing.'],
+];
+$('issues').innerHTML = ISSUES.map((x, i) => `<div class="issue"><span class="n">${i + 1}</span><div><b>${x[0]}.</b><p>${x[1]}</p></div></div>`).join('');
+
+// ---------- orchestration ----------
+function readouts() {
+  const set = (id, cls, txt) => { const c = $(id); c.className = 'ro ' + cls; c.querySelector('.v span').textContent = txt; };
+  set('roOhst', '', isFinite(SOL.ohst) ? f1(SOL.ohst) + ' °C' : '–');
+  if (!SOL.feasible) { set('roPinch', 'bad', 'infeasible'); set('roEta', '', '–'); return; }
+  set('roPinch', SOL.pinchAt === 'evap-inlet' ? 'warn' : 'ok', PL[SOL.pinchAt]);
+  set('roEta', '', pct(SOL.etaSys));
+}
+function updateAll() {
+  SOL = O.solveSimple(S.fluid, S.p, S.ths, opts());
+  if (!SOL.feasible && SOL.w) SOL.ohst = SOL.w.hevp / SOL.w.cpPre + SOL.w.tevp + S.dtpp;
+  readouts(); placePinch(); s5title();
+  if (!sweepOn && !sweepIdx) { drawHero(); drawFig4(); }
+  drawTS(); stateTable(); fillLedger($('ledger3'), EQ3); fillLedger($('ledger4'), EQ4); drawTQ3(); drawEx(); drawFig3(); drawFig8();
+  if (F9) drawFig9();
+}
+function updateSlow() {
+  const key = [S.ths, S.dtpp, S.etaT, S.htf].join('|');
+  drawFig10(); drawFig12();
+  if (key !== slowKey) { slowKey = key; drawFig11(); updDual(true); } else updDual(false);
+  document.querySelectorAll('.slow').forEach(e => e.classList.remove('stale'));
+}
+function redrawTheme() { updateAll(); drawFig5(); drawFig6(); REPRO_F7 = drawFig7(); slowKey = ''; updateSlow(); }
+updateAll(); drawFig5(); drawFig6(); renderRepro();
+setTimeout(() => { REPRO_F7 = drawFig7(); updateSlow(); setTimeout(computeRepro, 50); }, 60);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawTheme);
+new MutationObserver(redrawTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>
