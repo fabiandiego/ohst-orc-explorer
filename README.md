@@ -1,6 +1,7 @@
 # OHST Explorer
 
 **Live page:** https://fabiandiego.github.io/ohst-orc-explorer/
+**Talk script:** [a 15-minute presentation of this work](talk/talk-script.md)
 
 An interactive, browser-based reproduction of Sections 2–6 of:
 
@@ -185,6 +186,7 @@ The design was reviewed with a structured critique (Nielsen heuristics plus an a
 | `check.js`, `uitest.js` | Printout and stubbed-DOM UI test |
 | `dist/ohst-explorer.html` | Compiled page (artifact version) |
 | `docs/index.html` | Compiled page served by GitHub Pages |
+| `talk/talk-script.md` | 15-minute spoken presentation script with cues for the live page |
 
 ## 6. Development
 
