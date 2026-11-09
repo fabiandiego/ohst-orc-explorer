@@ -32,6 +32,7 @@
   --good: #5fbf7d; --warn: #e0a23a; --crit: #f07068; color-scheme: dark; }
 * { box-sizing: border-box; }
 html { scrollbar-color: var(--rule-2) var(--bg); }
+html, body { overflow-x: clip; }
 body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--f-body); margin: 0; caret-color: var(--op); accent-color: var(--op); }
 ::selection { background: var(--op); color: var(--op-ink); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
@@ -78,8 +79,9 @@ input[type=number] { width: 4.6rem; font: 500 0.86rem var(--f-mono); color: var(
 select, button { font: 500 0.86rem var(--f-body); color: var(--ink); background: var(--soft); border: 1px solid var(--rule-2); border-radius: 0; padding: 5px 9px; }
 button { cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--ink); }
-button:disabled { opacity: 0.55; cursor: progress; }
 button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+/* Busy/disabled: change fill, ink and border, not opacity alone; also overrides .primary */
+button:disabled, button.primary:disabled { background: var(--soft); color: var(--ink-3); border-color: var(--rule); cursor: progress; }
 .readouts { margin-left: auto; display: flex; border: 1px solid var(--rule-2); }
 .ro { padding: 3px 10px; border-right: 1px solid var(--rule-2); display: grid; min-width: 0; }
 .ro:last-child { border-right: 0; }
